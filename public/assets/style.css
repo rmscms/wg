@@ -18,6 +18,7 @@
 }
 
 html {
+    color-scheme: dark;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-family: var(--font-sans);
@@ -155,6 +156,7 @@ input[type="text"],
 input[type="password"],
 input[type="number"],
 input[type="datetime-local"],
+input[type="date"],
 input[type="search"] {
     width: 100%;
     padding: 0.75rem 0.9rem;
@@ -336,12 +338,21 @@ th {
 .dashboard-toolbar {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
     margin-bottom: 1.15rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--border);
+}
+
+.dashboard-search-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    flex: 1;
+    min-width: 0;
+    width: 100%;
 }
 
 .dashboard-search {
@@ -454,11 +465,123 @@ th {
     border: 1px solid var(--border);
     background: var(--surface);
     color: var(--text);
+    color-scheme: dark;
 }
 
 .dashboard-meta {
     font-size: 0.88rem;
     white-space: nowrap;
+    margin-inline-start: auto;
+}
+
+.dashboard-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 0.28rem 0.72rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.4;
+    cursor: pointer;
+    user-select: none;
+    gap: 0;
+}
+
+.filter-chip input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.filter-chip:hover {
+    border-color: rgba(148, 163, 184, 0.45);
+    color: var(--text);
+}
+
+.filter-chip:has(input:checked) {
+    border-color: rgba(37, 99, 235, 0.55);
+    background: rgba(37, 99, 235, 0.16);
+    color: var(--text);
+    font-weight: 600;
+}
+
+.filter-chip:has(input:focus-visible) {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+.filter-dates {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem 0.75rem;
+}
+
+.filter-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.filter-date input[type="date"] {
+    width: auto;
+    min-width: 9.5rem;
+    padding: 0.38rem 0.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    color-scheme: dark;
+    direction: ltr;
+}
+
+.filter-date input[type="date"]:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+.filter-reset {
+    margin: 0;
+    padding: 0.32rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+
+.filter-reset:hover {
+    color: var(--text);
+    border-color: rgba(148, 163, 184, 0.5);
 }
 
 .accounts-table th,
@@ -1498,8 +1621,13 @@ code {
         align-items: stretch;
     }
 
+    .dashboard-search-form,
     .dashboard-search {
         width: 100%;
+    }
+
+    .dashboard-meta {
+        margin-inline-start: 0;
     }
 
     .pagination {
@@ -2169,7 +2297,7 @@ body.modal-open {
 .settings-row select {
     width: 100%;
     padding: .65rem .9rem;
-    background: rgba(255,255,255,.05);
+    background: var(--card);
     border: 1px solid rgba(255,255,255,.1);
     border-radius: 10px;
     color: var(--text);
@@ -2177,6 +2305,12 @@ body.modal-open {
     font-size: .92rem;
     transition: border-color .18s, background .18s;
     direction: rtl;
+    color-scheme: dark;
+}
+
+.settings-row select option {
+    background: var(--card);
+    color: var(--text);
 }
 
 .settings-row input[dir="ltr"] { direction: ltr; }

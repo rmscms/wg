@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['ajax'] ?? '') === 'account-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCsrf($_POST['csrf_token'] ?? null)) {
         flash('danger', 'درخواست نامعتبر.');
-        redirect(dashboardUrl($listState['search'], $listState['page'], $listState['per_page']));
+        redirect(dashboardUrl($listState));
     }
 
     $action = $_POST['action'] ?? '';
@@ -126,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash('danger', $e->getMessage());
     }
 
-    redirect(dashboardUrl($listState['search'], $listState['page'], $listState['per_page']));
+    redirect(dashboardUrl($listState));
 }
 
 $list = dashboardLoadList($wgManager, $listState);
@@ -167,41 +167,82 @@ require __DIR__ . '/includes/header.php';
         <?= dashboardRenderStats($list) ?>
     </div>
     <div class="dashboard-toolbar">
-        <form method="get" class="dashboard-search" id="dashboard-search-form">
+        <form method="get" class="dashboard-search-form" id="dashboard-search-form">
             <input type="hidden" name="page" value="<?= (int) $page ?>" id="dashboard-page-input">
-            <div class="search-field" id="dashboard-search-field">
-                <span class="search-icon" aria-hidden="true">⌕</span>
-                <input
-                    type="search"
-                    name="q"
-                    id="dashboard-search-input"
-                    value="<?= e($search) ?>"
-                    placeholder="جستجوی زنده: نام، IP یا ID..."
-                    autocomplete="off"
-                    spellcheck="false"
-                    aria-controls="dashboard-accounts-tbody dashboard-meta dashboard-pagination-wrap"
-                >
-                <button
-                    type="button"
-                    class="search-clear"
-                    id="dashboard-search-clear"
-                    aria-label="پاک کردن جستجو"
-                    <?= $search === '' ? 'hidden' : '' ?>
-                >&times;</button>
-                <span class="search-spinner" id="dashboard-search-spinner" hidden aria-hidden="true"></span>
+            <div class="dashboard-search">
+                <div class="search-field" id="dashboard-search-field">
+                    <span class="search-icon" aria-hidden="true">⌕</span>
+                    <input
+                        type="search"
+                        name="q"
+                        id="dashboard-search-input"
+                        value="<?= e($search) ?>"
+                        placeholder="جستجوی زنده: نام، IP یا ID..."
+                        autocomplete="off"
+                        spellcheck="false"
+                        aria-controls="dashboard-accounts-tbody dashboard-meta dashboard-pagination-wrap"
+                    >
+                    <button
+                        type="button"
+                        class="search-clear"
+                        id="dashboard-search-clear"
+                        aria-label="پاک کردن جستجو"
+                        <?= $search === '' ? 'hidden' : '' ?>
+                    >&times;</button>
+                    <span class="search-spinner" id="dashboard-search-spinner" hidden aria-hidden="true"></span>
+                </div>
+                <label class="per-page-select">
+                    <span class="muted">در صفحه</span>
+                    <select name="per_page" id="dashboard-per-page">
+                        <?php foreach ([10, 20, 50, 100] as $option): ?>
+                            <option value="<?= $option ?>" <?= $perPage === $option ? 'selected' : '' ?>><?= $option ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <div class="dashboard-meta" id="dashboard-meta">
+                    <span class="muted"><?= e(dashboardRenderMetaText($list)) ?></span>
+                </div>
             </div>
-            <label class="per-page-select">
-                <span class="muted">در صفحه</span>
-                <select name="per_page" id="dashboard-per-page">
-                    <?php foreach ([10, 20, 50, 100] as $option): ?>
-                        <option value="<?= $option ?>" <?= $perPage === $option ? 'selected' : '' ?>><?= $option ?></option>
+            <div class="dashboard-filters">
+                <div class="filter-chips" role="radiogroup" aria-label="وضعیت اکانت">
+                    <?php foreach (dashboardStatusFilterOptions() as $value => $label): ?>
+                        <label class="filter-chip">
+                            <input
+                                type="radio"
+                                name="status"
+                                value="<?= e($value) ?>"
+                                <?= (string) ($listState['status'] ?? '') === (string) $value ? 'checked' : '' ?>
+                            >
+                            <span><?= e($label) ?></span>
+                        </label>
                     <?php endforeach; ?>
-                </select>
-            </label>
+                </div>
+                <div class="filter-dates">
+                    <label class="filter-date">
+                        <span>ایجاد از</span>
+                        <input type="date" name="created_from" id="dashboard-created-from" value="<?= e((string) ($listState['created_from'] ?? '')) ?>">
+                    </label>
+                    <label class="filter-date">
+                        <span>تا</span>
+                        <input type="date" name="created_to" id="dashboard-created-to" value="<?= e((string) ($listState['created_to'] ?? '')) ?>">
+                    </label>
+                    <label class="filter-date">
+                        <span>انقضا از</span>
+                        <input type="date" name="expires_from" id="dashboard-expires-from" value="<?= e((string) ($listState['expires_from'] ?? '')) ?>">
+                    </label>
+                    <label class="filter-date">
+                        <span>تا</span>
+                        <input type="date" name="expires_to" id="dashboard-expires-to" value="<?= e((string) ($listState['expires_to'] ?? '')) ?>">
+                    </label>
+                    <button
+                        type="button"
+                        class="filter-reset"
+                        id="dashboard-filter-reset"
+                        <?= dashboardListIsFiltered($listState, false) ? '' : 'hidden' ?>
+                    >بازنشانی فیلتر</button>
+                </div>
+            </div>
         </form>
-        <div class="dashboard-meta" id="dashboard-meta">
-            <span class="muted"><?= e(dashboardRenderMetaText($list)) ?></span>
-        </div>
     </div>
 
     <div class="table-wrap" id="dashboard-table-wrap">

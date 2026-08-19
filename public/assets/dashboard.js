@@ -103,11 +103,86 @@
         let requestSeq = 0;
         const DEBOUNCE_MS = 280;
 
+        function readFilters() {
+            const checked = searchForm.querySelector('input[name="status"]:checked');
+            const createdFrom = document.getElementById('dashboard-created-from');
+            const createdTo = document.getElementById('dashboard-created-to');
+            const expiresFrom = document.getElementById('dashboard-expires-from');
+            const expiresTo = document.getElementById('dashboard-expires-to');
+
+            return {
+                status: checked ? checked.value : '',
+                created_from: createdFrom ? createdFrom.value : '',
+                created_to: createdTo ? createdTo.value : '',
+                expires_from: expiresFrom ? expiresFrom.value : '',
+                expires_to: expiresTo ? expiresTo.value : '',
+            };
+        }
+
+        function writeFilters(state) {
+            const status = state.status || '';
+            searchForm.querySelectorAll('input[name="status"]').forEach(function (radio) {
+                radio.checked = radio.value === status;
+            });
+
+            const createdFrom = document.getElementById('dashboard-created-from');
+            const createdTo = document.getElementById('dashboard-created-to');
+            const expiresFrom = document.getElementById('dashboard-expires-from');
+            const expiresTo = document.getElementById('dashboard-expires-to');
+            if (createdFrom) {
+                createdFrom.value = state.created_from || '';
+            }
+            if (createdTo) {
+                createdTo.value = state.created_to || '';
+            }
+            if (expiresFrom) {
+                expiresFrom.value = state.expires_from || '';
+            }
+            if (expiresTo) {
+                expiresTo.value = state.expires_to || '';
+            }
+
+            toggleFilterReset(state);
+        }
+
+        function filtersFromUrl(url) {
+            return {
+                status: url.searchParams.get('status') || '',
+                created_from: url.searchParams.get('created_from') || '',
+                created_to: url.searchParams.get('created_to') || '',
+                expires_from: url.searchParams.get('expires_from') || '',
+                expires_to: url.searchParams.get('expires_to') || '',
+            };
+        }
+
+        function hasActiveFilters(filters) {
+            return !!(filters.status
+                || filters.created_from
+                || filters.created_to
+                || filters.expires_from
+                || filters.expires_to);
+        }
+
+        function toggleFilterReset(filters) {
+            const resetBtn = document.getElementById('dashboard-filter-reset');
+            if (!resetBtn) {
+                return;
+            }
+
+            resetBtn.hidden = !hasActiveFilters(filters || readFilters());
+        }
+
         function currentParams(overrides) {
+            const filters = readFilters();
             const params = {
                 q: searchInput.value.trim(),
                 page: String(pageInput ? pageInput.value : '1'),
                 per_page: perPageSelect ? perPageSelect.value : '20',
+                status: filters.status,
+                created_from: filters.created_from,
+                created_to: filters.created_to,
+                expires_from: filters.expires_from,
+                expires_to: filters.expires_to,
             };
 
             if (overrides) {
@@ -125,6 +200,12 @@
                 q: params.q || '',
                 page: params.page || '1',
                 per_page: params.per_page || '20',
+            });
+
+            ['status', 'created_from', 'created_to', 'expires_from', 'expires_to'].forEach(function (key) {
+                if (params[key]) {
+                    query.set(key, params[key]);
+                }
             });
 
             return '/?' + query.toString();
@@ -153,16 +234,21 @@
             searchClear.hidden = query === '';
         }
 
+        function setListField(name, value) {
+            document.querySelectorAll('input[name="' + name + '"]').forEach(function (el) {
+                el.value = value;
+            });
+        }
+
         function updateListFields(state) {
-            document.querySelectorAll('input[name="list_q"]').forEach(function (el) {
-                el.value = state.search || '';
-            });
-            document.querySelectorAll('input[name="list_page"]').forEach(function (el) {
-                el.value = String(state.page || 1);
-            });
-            document.querySelectorAll('input[name="list_per_page"]').forEach(function (el) {
-                el.value = String(state.per_page || 20);
-            });
+            setListField('list_q', state.search || '');
+            setListField('list_page', String(state.page || 1));
+            setListField('list_per_page', String(state.per_page || 20));
+            setListField('list_status', state.status || '');
+            setListField('list_created_from', state.created_from || '');
+            setListField('list_created_to', state.created_to || '');
+            setListField('list_expires_from', state.expires_from || '');
+            setListField('list_expires_to', state.expires_to || '');
         }
 
         function applyPayload(payload) {
@@ -186,6 +272,7 @@
             }
 
             toggleClearButton(payload.state.search || '');
+            writeFilters(payload.state);
             updateListFields(payload.state);
 
             if (payload.url && window.history && window.history.replaceState) {
@@ -293,6 +380,11 @@
                 q: url.searchParams.get('q') || '',
                 page: url.searchParams.get('page') || '1',
                 per_page: url.searchParams.get('per_page') || (perPageSelect ? perPageSelect.value : '20'),
+                status: url.searchParams.get('status') || '',
+                created_from: url.searchParams.get('created_from') || '',
+                created_to: url.searchParams.get('created_to') || '',
+                expires_from: url.searchParams.get('expires_from') || '',
+                expires_to: url.searchParams.get('expires_to') || '',
             }, true);
         });
 
@@ -302,8 +394,41 @@
             fetchList({ page: 1 }, true);
         });
 
+        searchForm.addEventListener('change', function (event) {
+            const target = event.target;
+            if (!target) {
+                return;
+            }
+
+            if (target.name === 'status' || target.type === 'date') {
+                fetchList({ page: 1 }, true);
+            }
+        });
+
+        const filterReset = document.getElementById('dashboard-filter-reset');
+        if (filterReset) {
+            filterReset.addEventListener('click', function () {
+                writeFilters({
+                    status: '',
+                    created_from: '',
+                    created_to: '',
+                    expires_from: '',
+                    expires_to: '',
+                });
+                fetchList({
+                    page: 1,
+                    status: '',
+                    created_from: '',
+                    created_to: '',
+                    expires_from: '',
+                    expires_to: '',
+                }, true);
+            });
+        }
+
         window.addEventListener('popstate', function () {
             const url = new URL(window.location.href);
+            const filters = filtersFromUrl(url);
             searchInput.value = url.searchParams.get('q') || '';
             if (pageInput) {
                 pageInput.value = url.searchParams.get('page') || '1';
@@ -311,11 +436,17 @@
             if (perPageSelect && url.searchParams.get('per_page')) {
                 perPageSelect.value = url.searchParams.get('per_page');
             }
+            writeFilters(filters);
             toggleClearButton(searchInput.value.trim());
             fetchList({
                 q: searchInput.value.trim(),
                 page: pageInput ? pageInput.value : '1',
                 per_page: perPageSelect ? perPageSelect.value : '20',
+                status: filters.status,
+                created_from: filters.created_from,
+                created_to: filters.created_to,
+                expires_from: filters.expires_from,
+                expires_to: filters.expires_to,
             }, true);
         });
     }

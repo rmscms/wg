@@ -1,5 +1,27 @@
 [
   {
+    "Id": 5,
+    "Title": "Deploy main to production",
+    "Date": "2026-08-19T17:06:00.9927732+03:30",
+    "FilesCount": 11,
+    "Branch": "main",
+    "Status": "Success",
+    "Files": [
+      "README.md",
+      "config/config.example.php",
+      "docs/overview.md",
+      "install.sh",
+      "public/api/openapi.yaml",
+      "scripts/apply-peer.sh",
+      "scripts/fix-permissions.sh",
+      "scripts/persist-wg-peers.sh",
+      "scripts/remove-peer.sh",
+      "src/Api/Router.php",
+      "src/WireGuardManager.php"
+    ],
+    "CommitHash": "c20303fe4bccb82beefdce7fd8f4eb719320f813"
+  },
+  {
     "Id": 4,
     "Title": "Deploy main to production",
     "Date": "2026-08-19T16:26:29.3427934+03:30",
@@ -99,25 +121,24 @@
     "CommitHash": "f8a4ab37d8f4b00f2fa271237cbb0fc9d2acab7c"
   },
   {
-    "Id": 5,
+    "Id": 6,
     "Title": "Deploy main to production",
-    "Date": "2026-08-19T17:06:00.9927732+03:30",
-    "FilesCount": 11,
+    "Date": "2026-08-19T17:27:08.4550356+03:30",
+    "FilesCount": 10,
     "Branch": "main",
     "Status": "Success",
     "Files": [
-      "README.md",
-      "config/config.example.php",
       "docs/overview.md",
-      "install.sh",
-      "public/api/openapi.yaml",
-      "scripts/apply-peer.sh",
-      "scripts/fix-permissions.sh",
-      "scripts/persist-wg-peers.sh",
-      "scripts/remove-peer.sh",
-      "src/Api/Router.php",
-      "src/WireGuardManager.php"
+      "public/assets/account-modal.css",
+      "public/assets/account-modal.js",
+      "public/assets/dashboard.js",
+      "public/edit.php",
+      "public/includes/account-modal-ajax.php",
+      "public/includes/account-modal.php",
+      "public/includes/dashboard-list-fragments.php",
+      "public/index.php",
+      "public/view.php"
     ],
-    "CommitHash": "c20303fe4bccb82beefdce7fd8f4eb719320f813"
+    "CommitHash": "75925816b3efce40f00dfcc0ef75d37e69dffff4"
   }
 ]

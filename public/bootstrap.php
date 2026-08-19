@@ -202,19 +202,96 @@ function redirect(string $path): void
     exit;
 }
 
-/** Build dashboard URL with search / pagination query params. */
-function dashboardUrl(string $search = '', int $page = 1, int $perPage = 20): string
+/** @return array<string, string> */
+function dashboardStatusFilterOptions(): array
 {
+    return [
+        '' => 'همه',
+        'active' => 'فعال',
+        'inactive' => 'غیرفعال',
+        'expired' => 'منقضی',
+        'volume' => 'حجم تمام',
+        'expiring' => 'انقضای ۲۴ ساعت',
+        'pending' => 'در انتظار اتصال',
+    ];
+}
+
+function dashboardParseDateParam(mixed $value): string
+{
+    $value = trim((string) $value);
+    if ($value === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+        return '';
+    }
+
+    $dt = DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+    if ($dt === false || $dt->format('Y-m-d') !== $value) {
+        return '';
+    }
+
+    return $value;
+}
+
+/** @param array<string, mixed> $state */
+function dashboardAccountFilters(array $state): array
+{
+    return [
+        'status' => (string) ($state['status'] ?? ''),
+        'created_from' => (string) ($state['created_from'] ?? ''),
+        'created_to' => (string) ($state['created_to'] ?? ''),
+        'expires_from' => (string) ($state['expires_from'] ?? ''),
+        'expires_to' => (string) ($state['expires_to'] ?? ''),
+    ];
+}
+
+/** @param array<string, mixed> $state */
+function dashboardListIsFiltered(array $state, bool $includeSearch = true): bool
+{
+    if ($includeSearch && trim((string) ($state['search'] ?? '')) !== '') {
+        return true;
+    }
+
+    foreach (['status', 'created_from', 'created_to', 'expires_from', 'expires_to'] as $key) {
+        if (trim((string) ($state[$key] ?? '')) !== '') {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/** Build dashboard URL with search / filters / pagination query params. */
+function dashboardUrl(array $state, ?int $page = null): string
+{
+    if ($page !== null) {
+        $state['page'] = max(1, $page);
+    }
+
     $params = [];
-    $search = trim($search);
+    $search = trim((string) ($state['search'] ?? ''));
     if ($search !== '') {
         $params['q'] = $search;
     }
-    if ($page > 1) {
-        $params['page'] = $page;
+
+    $pageNum = max(1, (int) ($state['page'] ?? 1));
+    if ($pageNum > 1) {
+        $params['page'] = $pageNum;
     }
+
+    $perPage = max(5, min(100, (int) ($state['per_page'] ?? 20)));
     if ($perPage !== 20) {
         $params['per_page'] = $perPage;
+    }
+
+    $status = (string) ($state['status'] ?? '');
+    if ($status !== '' && array_key_exists($status, dashboardStatusFilterOptions())) {
+        $params['status'] = $status;
+    }
+
+    foreach (['created_from', 'created_to', 'expires_from', 'expires_to'] as $key) {
+        $date = dashboardParseDateParam($state[$key] ?? '');
+        if ($date !== '') {
+            $params[$key] = $date;
+        }
     }
 
     $query = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
@@ -227,20 +304,34 @@ function dashboardStateFromRequest(): array
     $search = trim((string) ($_GET['q'] ?? $_POST['list_q'] ?? ''));
     $page = max(1, (int) ($_GET['page'] ?? $_POST['list_page'] ?? 1));
     $perPage = max(5, min(100, (int) ($_GET['per_page'] ?? $_POST['list_per_page'] ?? 20)));
+    $status = (string) ($_GET['status'] ?? $_POST['list_status'] ?? '');
+    if (!array_key_exists($status, dashboardStatusFilterOptions())) {
+        $status = '';
+    }
 
     return [
         'search' => $search,
         'page' => $page,
         'per_page' => $perPage,
+        'status' => $status,
+        'created_from' => dashboardParseDateParam($_GET['created_from'] ?? $_POST['list_created_from'] ?? ''),
+        'created_to' => dashboardParseDateParam($_GET['created_to'] ?? $_POST['list_created_to'] ?? ''),
+        'expires_from' => dashboardParseDateParam($_GET['expires_from'] ?? $_POST['list_expires_from'] ?? ''),
+        'expires_to' => dashboardParseDateParam($_GET['expires_to'] ?? $_POST['list_expires_to'] ?? ''),
     ];
 }
 
 function dashboardListFields(array $state): string
 {
     return implode('', [
-        '<input type="hidden" name="list_q" value="' . e($state['search']) . '">',
-        '<input type="hidden" name="list_page" value="' . (int) $state['page'] . '">',
-        '<input type="hidden" name="list_per_page" value="' . (int) $state['per_page'] . '">',
+        '<input type="hidden" name="list_q" value="' . e((string) ($state['search'] ?? '')) . '">',
+        '<input type="hidden" name="list_page" value="' . (int) ($state['page'] ?? 1) . '">',
+        '<input type="hidden" name="list_per_page" value="' . (int) ($state['per_page'] ?? 20) . '">',
+        '<input type="hidden" name="list_status" value="' . e((string) ($state['status'] ?? '')) . '">',
+        '<input type="hidden" name="list_created_from" value="' . e((string) ($state['created_from'] ?? '')) . '">',
+        '<input type="hidden" name="list_created_to" value="' . e((string) ($state['created_to'] ?? '')) . '">',
+        '<input type="hidden" name="list_expires_from" value="' . e((string) ($state['expires_from'] ?? '')) . '">',
+        '<input type="hidden" name="list_expires_to" value="' . e((string) ($state['expires_to'] ?? '')) . '">',
     ]);
 }
 

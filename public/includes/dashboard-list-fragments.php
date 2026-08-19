@@ -12,25 +12,35 @@ function dashboardLoadList(WireGuardManager $wgManager, array $listState): array
     $page = $listState['page'];
     $perPage = $listState['per_page'];
     $searchFilter = $search !== '' ? $search : null;
+    $filters = dashboardAccountFilters($listState);
 
-    $totalAccounts = $wgManager->countAccounts($searchFilter);
-    $statusCounts = $wgManager->countAccountsStatus($searchFilter);
+    $totalAccounts = $wgManager->countAccounts($searchFilter, $filters);
+    $statusCounts = $wgManager->countAccountsStatus($searchFilter, $filters);
     $totalPages = max(1, (int) ceil($totalAccounts / $perPage));
 
     if ($page > $totalPages) {
         $page = $totalPages;
     }
 
-    $accounts = $wgManager->listAccountsPaginated($page, $perPage, $searchFilter);
+    $accounts = $wgManager->listAccountsPaginated($page, $perPage, $searchFilter, $filters);
     $onlineById = $wgManager->getOnlineStatusesForAccounts($accounts);
 
     $rangeFrom = $totalAccounts === 0 ? 0 : (($page - 1) * $perPage) + 1;
     $rangeTo = min($totalAccounts, $page * $perPage);
 
+    $listState['search'] = $search;
+    $listState['page'] = $page;
+    $listState['per_page'] = $perPage;
+
     return [
         'search' => $search,
         'page' => $page,
         'per_page' => $perPage,
+        'status' => (string) ($listState['status'] ?? ''),
+        'created_from' => (string) ($listState['created_from'] ?? ''),
+        'created_to' => (string) ($listState['created_to'] ?? ''),
+        'expires_from' => (string) ($listState['expires_from'] ?? ''),
+        'expires_to' => (string) ($listState['expires_to'] ?? ''),
         'total_accounts' => $totalAccounts,
         'active_accounts' => $statusCounts['active'],
         'inactive_accounts' => $statusCounts['inactive'],
@@ -39,11 +49,7 @@ function dashboardLoadList(WireGuardManager $wgManager, array $listState): array
         'range_to' => $rangeTo,
         'accounts' => $accounts,
         'online_by_id' => $onlineById,
-        'list_state' => [
-            'search' => $search,
-            'page' => $page,
-            'per_page' => $perPage,
-        ],
+        'list_state' => $listState,
     ];
 }
 
@@ -57,11 +63,16 @@ function dashboardRenderAccountsTbody(array $list, WireGuardManager $wgManager):
     ob_start();
 
     if ($accounts === []) {
+        if ($search !== '') {
+            $emptyMessage = 'نتیجه‌ای برای «' . e($search) . '» یافت نشد.';
+        } elseif (dashboardListIsFiltered($listState, false)) {
+            $emptyMessage = 'نتیجه‌ای با این فیلترها یافت نشد.';
+        } else {
+            $emptyMessage = 'هنوز اکانتی ایجاد نشده.';
+        }
         ?>
         <tr>
-            <td colspan="6" class="empty">
-                <?= $search !== '' ? 'نتیجه‌ای برای «' . e($search) . '» یافت نشد.' : 'هنوز اکانتی ایجاد نشده.' ?>
-            </td>
+            <td colspan="6" class="empty"><?= $emptyMessage ?></td>
         </tr>
         <?php
     } else {
@@ -211,9 +222,8 @@ function dashboardRenderAccountsTbody(array $list, WireGuardManager $wgManager):
 
 function dashboardRenderPagination(array $list): string
 {
-    $search = $list['search'];
+    $listState = $list['list_state'];
     $page = $list['page'];
-    $perPage = $list['per_page'];
     $totalPages = $list['total_pages'];
 
     if ($totalPages <= 1) {
@@ -224,7 +234,7 @@ function dashboardRenderPagination(array $list): string
     ?>
     <nav class="pagination" aria-label="صفحه‌بندی">
         <?php if ($page > 1): ?>
-            <a class="page-link" href="<?= e(dashboardUrl($search, $page - 1, $perPage)) ?>">قبلی</a>
+            <a class="page-link" href="<?= e(dashboardUrl($listState, $page - 1)) ?>">قبلی</a>
         <?php else: ?>
             <span class="page-link is-disabled">قبلی</span>
         <?php endif; ?>
@@ -234,7 +244,7 @@ function dashboardRenderPagination(array $list): string
         $start = max(1, $page - $window);
         $end = min($totalPages, $page + $window);
         if ($start > 1): ?>
-            <a class="page-link" href="<?= e(dashboardUrl($search, 1, $perPage)) ?>">1</a>
+            <a class="page-link" href="<?= e(dashboardUrl($listState, 1)) ?>">1</a>
             <?php if ($start > 2): ?><span class="page-ellipsis">…</span><?php endif; ?>
         <?php endif; ?>
 
@@ -242,17 +252,17 @@ function dashboardRenderPagination(array $list): string
             <?php if ($p === $page): ?>
                 <span class="page-link is-active"><?= $p ?></span>
             <?php else: ?>
-                <a class="page-link" href="<?= e(dashboardUrl($search, $p, $perPage)) ?>"><?= $p ?></a>
+                <a class="page-link" href="<?= e(dashboardUrl($listState, $p)) ?>"><?= $p ?></a>
             <?php endif; ?>
         <?php endfor; ?>
 
         <?php if ($end < $totalPages): ?>
             <?php if ($end < $totalPages - 1): ?><span class="page-ellipsis">…</span><?php endif; ?>
-            <a class="page-link" href="<?= e(dashboardUrl($search, $totalPages, $perPage)) ?>"><?= $totalPages ?></a>
+            <a class="page-link" href="<?= e(dashboardUrl($listState, $totalPages)) ?>"><?= $totalPages ?></a>
         <?php endif; ?>
 
         <?php if ($page < $totalPages): ?>
-            <a class="page-link" href="<?= e(dashboardUrl($search, $page + 1, $perPage)) ?>">بعدی</a>
+            <a class="page-link" href="<?= e(dashboardUrl($listState, $page + 1)) ?>">بعدی</a>
         <?php else: ?>
             <span class="page-link is-disabled">بعدی</span>
         <?php endif; ?>
@@ -318,6 +328,11 @@ function dashboardListAjaxPayload(array $list, WireGuardManager $wgManager): arr
             'search' => $list['search'],
             'page' => $list['page'],
             'per_page' => $list['per_page'],
+            'status' => (string) ($listState['status'] ?? ''),
+            'created_from' => (string) ($listState['created_from'] ?? ''),
+            'created_to' => (string) ($listState['created_to'] ?? ''),
+            'expires_from' => (string) ($listState['expires_from'] ?? ''),
+            'expires_to' => (string) ($listState['expires_to'] ?? ''),
             'total' => $list['total_accounts'],
             'active' => $list['active_accounts'],
             'inactive' => $list['inactive_accounts'],
@@ -325,7 +340,7 @@ function dashboardListAjaxPayload(array $list, WireGuardManager $wgManager): arr
             'range_from' => $list['range_from'],
             'range_to' => $list['range_to'],
         ],
-        'url' => dashboardUrl($listState['search'], $listState['page'], $listState['per_page']),
+        'url' => dashboardUrl($listState),
         'list_fields' => dashboardListFields($listState),
     ];
 }

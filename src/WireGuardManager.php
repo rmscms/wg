@@ -496,57 +496,34 @@ final class WireGuardManager
         return $stmt->fetchAll();
     }
 
-    public function countAccounts(?string $search = null): int
+    /**
+     * @param array<string, mixed> $filters
+     */
+    public function countAccounts(?string $search = null, array $filters = []): int
     {
-        $like = self::accountSearchLike($search);
-        if ($like === null) {
-            return (int) $this->db->query('SELECT COUNT(*) FROM accounts')->fetchColumn();
-        }
-
-        $stmt = $this->db->prepare(
-            'SELECT COUNT(*) FROM accounts
-             WHERE name LIKE :term1
-                OR ip_address LIKE :term2
-                OR CAST(id AS CHAR) LIKE :term3'
-        );
-        $stmt->execute([
-            'term1' => $like,
-            'term2' => $like,
-            'term3' => $like,
-        ]);
+        [$where, $params] = $this->accountListWhere($search, $filters);
+        $stmt = $this->prepareAccountList('SELECT COUNT(*) FROM accounts' . $where, $params);
+        $stmt->execute();
 
         return (int) $stmt->fetchColumn();
     }
 
-    /** @return array{active: int, inactive: int} */
-    public function countAccountsStatus(?string $search = null): array
+    /**
+     * @param array<string, mixed> $filters
+     * @return array{active: int, inactive: int}
+     */
+    public function countAccountsStatus(?string $search = null, array $filters = []): array
     {
-        $like = self::accountSearchLike($search);
-
-        if ($like === null) {
-            $row = $this->db->query(
-                'SELECT
-                    COALESCE(SUM(is_active = 1), 0) AS active_count,
-                    COALESCE(SUM(is_active = 0), 0) AS inactive_count
-                 FROM accounts'
-            )->fetch();
-        } else {
-            $stmt = $this->db->prepare(
-                'SELECT
-                    COALESCE(SUM(is_active = 1), 0) AS active_count,
-                    COALESCE(SUM(is_active = 0), 0) AS inactive_count
-                 FROM accounts
-                 WHERE name LIKE :term1
-                    OR ip_address LIKE :term2
-                    OR CAST(id AS CHAR) LIKE :term3'
-            );
-            $stmt->execute([
-                'term1' => $like,
-                'term2' => $like,
-                'term3' => $like,
-            ]);
-            $row = $stmt->fetch();
-        }
+        [$where, $params] = $this->accountListWhere($search, $filters);
+        $stmt = $this->prepareAccountList(
+            'SELECT
+                COALESCE(SUM(is_active = 1), 0) AS active_count,
+                COALESCE(SUM(is_active = 0), 0) AS inactive_count
+             FROM accounts' . $where,
+            $params
+        );
+        $stmt->execute();
+        $row = $stmt->fetch();
 
         return [
             'active' => (int) ($row['active_count'] ?? 0),
@@ -554,36 +531,21 @@ final class WireGuardManager
         ];
     }
 
-    /** @return list<array<string, mixed>> */
-    public function listAccountsPaginated(int $page, int $perPage, ?string $search = null): array
+    /**
+     * @param array<string, mixed> $filters
+     * @return list<array<string, mixed>>
+     */
+    public function listAccountsPaginated(int $page, int $perPage, ?string $search = null, array $filters = []): array
     {
         $page = max(1, $page);
         $perPage = max(1, $perPage);
         $offset = ($page - 1) * $perPage;
-        $like = self::accountSearchLike($search);
+        [$where, $params] = $this->accountListWhere($search, $filters);
 
-        if ($like === null) {
-            $stmt = $this->db->prepare(
-                'SELECT * FROM accounts ORDER BY id DESC LIMIT :limit OFFSET :offset'
-            );
-            $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
-            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-            $stmt->execute();
-
-            return $stmt->fetchAll();
-        }
-
-        $stmt = $this->db->prepare(
-            'SELECT * FROM accounts
-             WHERE name LIKE :term1
-                OR ip_address LIKE :term2
-                OR CAST(id AS CHAR) LIKE :term3
-             ORDER BY id DESC
-             LIMIT :limit OFFSET :offset'
+        $stmt = $this->prepareAccountList(
+            'SELECT * FROM accounts' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset',
+            $params
         );
-        $stmt->bindValue(':term1', $like);
-        $stmt->bindValue(':term2', $like);
-        $stmt->bindValue(':term3', $like);
         $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -598,6 +560,117 @@ final class WireGuardManager
         }
 
         return '%' . trim($search) . '%';
+    }
+
+    /**
+     * Shared WHERE for dashboard account list (search AND status AND date ranges).
+     *
+     * @param array<string, mixed> $filters
+     * @return array{0: string, 1: array<string, string>}
+     */
+    private function accountListWhere(?string $search, array $filters): array
+    {
+        $clauses = [];
+        $params = [];
+
+        $like = self::accountSearchLike($search);
+        if ($like !== null) {
+            $clauses[] = '(name LIKE :term1 OR ip_address LIKE :term2 OR CAST(id AS CHAR) LIKE :term3)';
+            $params['term1'] = $like;
+            $params['term2'] = $like;
+            $params['term3'] = $like;
+        }
+
+        $pendingSql = "(expiry_mode = 'first_connect' AND first_connected_at IS NULL AND IFNULL(expiry_duration_days, 0) > 0)";
+        $expiredSql = '(expires_at IS NOT NULL AND expires_at <= NOW())';
+        $volumeSql = '(volume_limit_bytes > 0 AND volume_used_bytes >= volume_limit_bytes)';
+
+        $status = (string) ($filters['status'] ?? '');
+        switch ($status) {
+            case 'active':
+                $clauses[] = 'is_active = 1 AND NOT ' . $pendingSql . ' AND NOT ' . $expiredSql . ' AND NOT ' . $volumeSql;
+                break;
+            case 'inactive':
+                $clauses[] = 'is_active = 0';
+                break;
+            case 'expired':
+                $clauses[] = $expiredSql;
+                break;
+            case 'volume':
+                $clauses[] = $volumeSql;
+                break;
+            case 'expiring':
+                $clauses[] = '(expires_at IS NOT NULL AND expires_at > NOW() AND expires_at <= DATE_ADD(NOW(), INTERVAL 24 HOUR))';
+                break;
+            case 'pending':
+                $clauses[] = $pendingSql;
+                break;
+        }
+
+        $createdFrom = self::accountFilterDate($filters['created_from'] ?? null);
+        $createdTo = self::accountFilterDate($filters['created_to'] ?? null);
+        if ($createdFrom !== null && $createdTo !== null && $createdFrom > $createdTo) {
+            [$createdFrom, $createdTo] = [$createdTo, $createdFrom];
+        }
+        if ($createdFrom !== null) {
+            $clauses[] = 'created_at >= :created_from';
+            $params['created_from'] = $createdFrom;
+        }
+        if ($createdTo !== null) {
+            $clauses[] = 'created_at < DATE_ADD(:created_to, INTERVAL 1 DAY)';
+            $params['created_to'] = $createdTo;
+        }
+
+        $expiresFrom = self::accountFilterDate($filters['expires_from'] ?? null);
+        $expiresTo = self::accountFilterDate($filters['expires_to'] ?? null);
+        if ($expiresFrom !== null && $expiresTo !== null && $expiresFrom > $expiresTo) {
+            [$expiresFrom, $expiresTo] = [$expiresTo, $expiresFrom];
+        }
+        if ($expiresFrom !== null || $expiresTo !== null) {
+            $clauses[] = 'expires_at IS NOT NULL';
+            if ($expiresFrom !== null) {
+                $clauses[] = 'expires_at >= :expires_from';
+                $params['expires_from'] = $expiresFrom;
+            }
+            if ($expiresTo !== null) {
+                $clauses[] = 'expires_at < DATE_ADD(:expires_to, INTERVAL 1 DAY)';
+                $params['expires_to'] = $expiresTo;
+            }
+        }
+
+        if ($clauses === []) {
+            return ['', []];
+        }
+
+        return [' WHERE ' . implode(' AND ', $clauses), $params];
+    }
+
+    private static function accountFilterDate(mixed $value): ?string
+    {
+        $value = trim((string) $value);
+        if ($value === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return null;
+        }
+
+        $dt = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+        if ($dt === false || $dt->format('Y-m-d') !== $value) {
+            return null;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    private function prepareAccountList(string $sql, array $params): \PDOStatement
+    {
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $name => $value) {
+            $stmt->bindValue(':' . $name, $value);
+        }
+
+        return $stmt;
     }
 
     public function buildClientConfig(array $account): string
