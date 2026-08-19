@@ -1,0 +1,7 @@
+config/
+storage/
+database/
+src/
+scripts/
+*.md
+install.sh

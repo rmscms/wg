@@ -1,0 +1,47 @@
+RewriteEngine On
+RewriteBase /
+
+ErrorDocument 404 /404.php
+
+# Pass Authorization header to PHP (Bearer token)
+RewriteCond %{HTTP:Authorization} .
+RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# API v1 (skip existing files to avoid rewrite loops)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^api/v1/?(.*)$ /api/v1/index.php?route=$1 [L,QSA]
+RewriteRule ^api/docs/?$ /api/docs.php [L]
+RewriteRule ^api/openapi\.yaml$ /api/openapi.php [L]
+
+# Short subscribe panel URL: /s/{short} → subscribe.php?short=xxx
+RewriteRule ^s/([a-zA-Z0-9]{6,16})/?$ subscribe.php?short=$1 [L,QSA]
+
+# Custom admin login path (slug from config admin.login_path via admin-gate.php)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([a-zA-Z0-9_-]{4,48})/?$ admin-gate.php [L,QSA]
+
+
+# Local fonts
+<IfModule mod_mime.c>
+    AddType font/woff2 .woff2
+    AddType application/yaml .yaml
+    AddType application/yaml .yml
+</IfModule>
+
+<IfModule mod_php.c>
+    <FilesMatch "\.(yaml|yml)$">
+        SetHandler none
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js|woff2)$">
+        Header set Cache-Control "public, max-age=604800"
+    </FilesMatch>
+</IfModule>
+
+# Block access to hidden files
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

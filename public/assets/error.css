@@ -1,0 +1,100 @@
+/* ═══════════════════════════════════════════
+   Error pages (404)
+   ═══════════════════════════════════════════ */
+
+.error-body {
+    background: #070d1a;
+    background-image:
+        radial-gradient(ellipse 90% 55% at 50% -10%, rgba(59,130,246,.18) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 85% 95%,  rgba(99,102,241,.12) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 35% at 10% 80%,  rgba(16,185,129,.06) 0%, transparent 55%);
+    min-height: 100vh;
+}
+
+.error-body .footer {
+    display: none;
+}
+
+.error-body main.container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 2rem);
+    padding: 2rem 0;
+}
+
+.error-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.error-card {
+    width: min(480px, calc(100% - 2rem));
+    text-align: center;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 24px;
+    padding: 3rem 2rem 2.5rem;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow:
+        0 24px 64px rgba(0,0,0,.55),
+        0 1px 0 rgba(255,255,255,.06) inset;
+}
+
+.error-code {
+    margin: 0 0 .5rem;
+    font-size: clamp(4rem, 18vw, 6rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -.06em;
+    background: linear-gradient(135deg, #93c5fd 0%, #6366f1 55%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 8px 28px rgba(99,102,241,.25));
+}
+
+.error-title {
+    margin: 0 0 .75rem;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #e2e8f0;
+    letter-spacing: -.02em;
+}
+
+.error-text {
+    margin: 0 auto;
+    max-width: 28ch;
+    font-size: .92rem;
+    line-height: 1.75;
+    color: #94a3b8;
+}
+
+.error-icon {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(99,102,241,.12);
+    border: 1px solid rgba(129,140,248,.22);
+    color: #a5b4fc;
+}
+
+.error-icon svg {
+    width: 36px;
+    height: 36px;
+}
+
+.error-divider {
+    width: 48px;
+    height: 3px;
+    margin: 1.75rem auto 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, rgba(129,140,248,.55), transparent);
+}

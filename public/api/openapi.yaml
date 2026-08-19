@@ -1,0 +1,805 @@
+openapi: 3.0.3
+info:
+  title: WireGuard Panel API
+  description: |
+    REST API for WireGuard management panel.
+
+    **Admin auth:** `Authorization: Bearer {api_token}` (from `config.php`) or admin session cookie after `POST /auth/login`.
+
+    **Subscribe auth:** 64-char hex token in URL path (no admin token required).
+  version: 1.1.0
+
+servers:
+  - url: /api/v1
+    description: Panel API v1
+
+tags:
+  - name: System
+  - name: Auth
+  - name: Accounts
+  - name: Traffic
+  - name: Server
+  - name: Subscribe
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API Token
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: PHPSESSID
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    AccountStatus:
+      type: object
+      properties:
+        label:
+          type: string
+        class:
+          type: string
+
+    OnlineStatus:
+      type: object
+      properties:
+        online:
+          type: boolean
+        state:
+          type: string
+          enum: [online, offline, disabled, unknown]
+        label:
+          type: string
+        last_handshake:
+          type: integer
+        last_handshake_at:
+          type: string
+          nullable: true
+        seconds_ago:
+          type: integer
+          nullable: true
+        relative:
+          type: string
+        timeout:
+          type: integer
+        wg_ok:
+          type: boolean
+
+    SubscribeLinks:
+      type: object
+      properties:
+        token:
+          type: string
+        feed_url:
+          type: string
+          description: Android subscription URL (plain wireguard:// URI)
+        ios_url:
+          type: string
+          description: iOS/Streisand subscription URL (rawconf format)
+        panel_url:
+          type: string
+        wireguard_uri:
+          type: string
+        node_label:
+          type: string
+        userinfo:
+          type: string
+
+    Account:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        ip_address:
+          type: string
+        public_key:
+          type: string
+        speed_limit_kbps:
+          type: integer
+        volume_limit_bytes:
+          type: integer
+        volume_used_bytes:
+          type: integer
+        volume_percent:
+          type: number
+        expires_at:
+          type: string
+          nullable: true
+        expiry_mode:
+          type: string
+          enum: [fixed, first_connect]
+        expiry_duration_days:
+          type: integer
+        first_connected_at:
+          type: string
+          nullable: true
+        expiry_await_reconnect:
+          type: boolean
+        expiry_display:
+          type: string
+          description: Jalali formatted expiry for display
+        expiry_pending:
+          type: boolean
+        days_until_expiry:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+        online:
+          $ref: '#/components/schemas/OnlineStatus'
+        subscribe:
+          $ref: '#/components/schemas/SubscribeLinks'
+        last_wg_rx_bytes:
+          type: integer
+          nullable: true
+        last_wg_tx_bytes:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+        updated_at:
+          type: string
+
+    AccountInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: user-01
+        speed_limit_kbps:
+          type: integer
+          example: 5120
+        volume_limit:
+          type: string
+          description: Human size (10GB, 500MB) or use volume_limit_bytes
+          example: 10GB
+        volume_limit_bytes:
+          type: integer
+        expiry_mode:
+          type: string
+          enum: [fixed, first_connect]
+          default: fixed
+        expiry_duration_days:
+          type: integer
+          description: Required for first_connect mode
+          example: 30
+        expires_at:
+          type: string
+          nullable: true
+          example: "2026-12-31 23:59:59"
+        is_active:
+          type: boolean
+
+    TrafficLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        account_id:
+          type: integer
+        rx_bytes:
+          type: integer
+        tx_bytes:
+          type: integer
+        total_bytes:
+          type: integer
+        recorded_at:
+          type: string
+
+    SubscriptionFeedPayload:
+      type: object
+      properties:
+        wireguard_uri:
+          type: string
+          description: wireguard:// URI (standard base64 URL-encoded keys) for Android clients
+        feed_url:
+          type: string
+          description: Android subscription URL — plain wireguard:// URI format
+        ios_url:
+          type: string
+          description: iOS subscription URL — rawconf (.conf file) format for Streisand
+        panel_url:
+          type: string
+        node_label:
+          type: string
+        userinfo:
+          type: string
+        profile_title:
+          type: string
+        profile_web_page_url:
+          type: string
+        profile_update_interval_hours:
+          type: integer
+        feed_body:
+          type: string
+          description: Plain text body (wireguard:// URI + metadata comments)
+        feed_body_base64:
+          type: string
+          description: Base64-encoded version of feed_body
+        conf_body:
+          type: string
+          description: Standard WireGuard .conf (INI) file content — for iOS/Streisand
+        conf_body_base64:
+          type: string
+          description: Base64-encoded version of conf_body
+
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Admin login (session cookie)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Authenticated
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Admin logout
+      responses:
+        '200':
+          description: Logged out
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Current auth status
+      responses:
+        '200':
+          description: Auth info
+
+  /accounts:
+    get:
+      tags: [Accounts]
+      summary: List accounts (all or paginated)
+      description: |
+        Without query params returns all accounts.
+        With `page`, `per_page`, or `q` returns a paginated slice.
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          description: |
+            Records per page (client-controlled).
+            Default from config (`api.pagination.default_per_page`, usually 20).
+            Upper bound only if `api.pagination.max_per_page` > 0 in config (0 = unlimited).
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
+        - name: q
+          in: query
+          description: Search name, IP, or account id
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Account list
+        '401':
+          description: Unauthorized
+    post:
+      tags: [Accounts]
+      summary: Create account
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountInput'
+      responses:
+        '201':
+          description: Created
+        '422':
+          description: Validation error
+
+  /accounts/online-status:
+    get:
+      tags: [Accounts]
+      summary: Online status for all accounts
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Includes wg_ok, online_timeout, and accounts map
+
+  /accounts/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      tags: [Accounts]
+      summary: Get account details
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '404':
+          description: Not found
+    patch:
+      tags: [Accounts]
+      summary: Update account
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountInput'
+      responses:
+        '200':
+          description: Updated
+    delete:
+      tags: [Accounts]
+      summary: Delete account
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Deleted
+
+  /accounts/{id}/toggle:
+    post:
+      tags: [Accounts]
+      summary: Toggle active/inactive
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Toggled
+
+  /accounts/{id}/reset-traffic:
+    post:
+      tags: [Accounts]
+      summary: Reset volume usage to zero (reconnects peer)
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Reset
+
+  /accounts/{id}/reset-expiry:
+    post:
+      tags: [Accounts]
+      summary: Reset expiry / first-connect timer (reconnects peer)
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Reset
+
+  /accounts/{id}/reset-both:
+    post:
+      tags: [Accounts]
+      summary: Reset traffic and expiry together (reconnects peer)
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Reset
+
+  /accounts/{id}/regenerate-subscribe-token:
+    post:
+      tags: [Accounts]
+      summary: Generate a new subscribe token for the account
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Updated account with new token
+
+  /accounts/{id}/config:
+    get:
+      tags: [Accounts]
+      summary: Download WireGuard .conf file
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: WireGuard config
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /accounts/{id}/wireguard-uri:
+    get:
+      tags: [Accounts]
+      summary: wireguard:// URI and subscription metadata
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Subscription feed payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionFeedPayload'
+
+  /accounts/{id}/subscription-feed:
+    get:
+      tags: [Accounts]
+      summary: Subscription feed body (base64) for admin
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Feed payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionFeedPayload'
+
+  /accounts/{id}/qr:
+    get:
+      tags: [Accounts]
+      summary: QR code image for config, wireguard URI, or subscribe URL
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [config, wireguard, subscribe, subscribe-ios]
+            default: config
+          description: config=WireGuard .conf QR, wireguard=wireguard:// URI QR, subscribe=Android sub URL QR, subscribe-ios=iOS sub URL QR
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [png, json]
+            default: png
+          description: json returns data_url with base64 PNG
+      responses:
+        '200':
+          description: PNG image or JSON with data_url
+
+  /accounts/{id}/online-status:
+    get:
+      tags: [Accounts]
+      summary: Online status for one account
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Online status with wg_ok and online_timeout in meta
+
+  /accounts/{id}/traffic-logs:
+    get:
+      tags: [Accounts]
+      summary: Paginated traffic log history
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        '200':
+          description: Traffic log entries
+
+  /accounts/{id}/transfer:
+    get:
+      tags: [Accounts]
+      summary: Raw wg transfer counters and DB baseline
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Transfer stats
+
+  /traffic/sync:
+    post:
+      tags: [Traffic]
+      summary: Sync WireGuard traffic and enforce limits
+      description: 'Pass {"verbose": true} for sync log lines in response.'
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                verbose:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Synced
+
+  /traffic/sync-data:
+    post:
+      tags: [Traffic]
+      summary: Sync traffic only (no limit enforcement)
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                verbose:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: Sync report with log_lines
+
+  /limits/enforce:
+    post:
+      tags: [Traffic]
+      summary: Enforce expiry and volume limits
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Enforced
+
+  /limits/process-first-connection:
+    post:
+      tags: [Traffic]
+      summary: Activate first-connect expiry from handshakes
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Processed
+
+  /server:
+    get:
+      tags: [Server]
+      summary: WireGuard server info
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Server metadata
+
+  /system/info:
+    get:
+      tags: [System]
+      summary: Read-only panel configuration and stats
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      responses:
+        '200':
+          description: System info (no secrets)
+
+  /system/purge-peers:
+    post:
+      tags: [System]
+      summary: Remove WireGuard peers for inactive/expired accounts
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Purged
+
+  /subscribe/{token}:
+    get:
+      tags: [Subscribe]
+      summary: Subscribe live data (volume, expiry, online)
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-f0-9]{64}$'
+      responses:
+        '200':
+          description: Live subscribe data
+        '404':
+          description: Invalid token
+
+  /subscribe/{token}/status:
+    get:
+      tags: [Subscribe]
+      summary: Subscribe status (same as live poll endpoint)
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status JSON
+
+  /subscribe/{token}/links:
+    get:
+      tags: [Subscribe]
+      summary: Subscription URLs, wireguard URI, and feed metadata
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Links
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionFeedPayload'
+
+  /subscribe/{token}/feed:
+    get:
+      tags: [Subscribe]
+      summary: Subscription feed body (base64) for clients
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Base64 feed body and headers metadata

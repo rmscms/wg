@@ -1,0 +1,93 @@
+---
+description: تصویر کلی پنل WireGuard — قبل از هر کار docs/overview.md را بخوان
+alwaysApply: true
+---
+
+# 📖 منبع حقیقت
+
+قبل از تغییر کد، **حتماً** `docs/overview.md` را بخوان.
+
+جزئیات سرویس، صفحات، API و اسکریپت‌ها همان‌جاست.
+
+پاسخ به کاربر: فارسی، RTL، با ایموجی، تیتروار و مرتب.
+
+---
+
+# 🛡️ این پروژه چیست؟
+
+پنل مدیریت **WireGuard** روی Ubuntu 24.
+
+PHP 8.3 + Apache + MariaDB + اینترفیس `wg0`.
+
+کار: ساخت و مدیریت اکانت VPN با سقف حجم، سرعت و انقضا.
+
+---
+
+# 🎯 قابلیت‌ها
+
+- 👥 CRUD اکانت + کلید + IP خودکار
+- 📷 QR محلی و دانلود `.conf`
+- ⏳ انقضا ثابت یا از اولین اتصال
+- 🚀 سقف سرعت با `tc` / HTB
+- 📊 سقف حجم از ترافیک `wg`
+- 🟢 وضعیت آنلاین از handshake
+- 📱 Subscribe برای اپ و پنل وب کاربر
+- 🔌 REST API v1 + Swagger
+- 💾 بکاپ DB و `wg0.conf`
+
+---
+
+# 🧱 سرویس‌ها
+
+- 🔐 WireGuard `wg0` — UDP 51820
+- 🐘 PHP 8.3 — منطق پنل
+- 🌍 Apache + SSL — UI و API
+- 🐬 MariaDB — `accounts` و `traffic_logs`
+- 📜 Cron هر ۵ دقیقه — ترافیک و محدودیت
+- 🚦 tc — سقف سرعت peer
+
+مسیر سرور: `/opt/wg-panel`
+
+---
+
+# 📁 کجا چه چیزی است؟
+
+- `public/` — صفحات ادمین، subscribe، API
+- `src/` — کلاس‌ها؛ قلب کار: `WireGuardManager`
+- `scripts/` — کرون، sync، peer، بکاپ
+- `config/config.php` — تنظیمات زنده
+- `database/` — schema و migration
+- `docs/overview.md` — مستند کامل
+
+---
+
+# 🖥️ صفحات مهم
+
+- 🏠 `index.php` داشبورد
+- ➕ `create.php` / ✏️ `edit.php` / 👁️ `view.php`
+- ⚙️ `settings.php` تنظیمات و بکاپ
+- 🔑 `login.php` یا مسیر سفارشی ادمین
+- 📡 `subscribe.php` پنل کاربر
+- 📚 `/api/docs` سواگر
+
+---
+
+# 🔌 API
+
+پایه: `/api/v1`
+
+ادمین: Bearer از `api.token` یا سشن لاگین.
+
+گروه‌ها: `auth` · `accounts` · `traffic` · `limits` · `server` · `system` · `subscribe`
+
+Spec: `public/api/openapi.yaml`
+
+---
+
+# 🕒 اسکریپت‌های حیاتی
+
+- `sync-traffic.php` — شمارش حجم
+- `check-limits.php` — قطع منقضی / پر حجم
+- `sync-wg.php` — DB ↔ conf ↔ runtime
+- `restore-tc.php` — بازگردانی سرعت
+- `apply-peer.sh` / `remove-peer.sh` — peer زنده

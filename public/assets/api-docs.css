@@ -1,0 +1,483 @@
+/* API docs page — dark theme aligned with panel palette */
+
+.api-docs-page main.container {
+    width: min(1380px, calc(100% - 2rem));
+}
+
+.api-docs-page .page-header h1 {
+    background: linear-gradient(135deg, #f9fafb 0%, #93c5fd 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.api-docs-page .page-header .muted {
+    color: #94a3b8;
+}
+
+.api-docs-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #93c5fd;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.28);
+}
+
+.api-token-card {
+    margin-bottom: 1.25rem;
+    border-color: rgba(59, 130, 246, 0.3);
+    background: linear-gradient(145deg, rgba(59, 130, 246, 0.1) 0%, var(--card) 55%);
+}
+
+.api-token-card h2 {
+    color: #e2e8f0;
+    font-size: 1.05rem;
+}
+
+.api-token-card .muted strong {
+    color: #bfdbfe;
+    font-weight: 600;
+}
+
+.api-token-card .subscribe-link-box input {
+    background: #0b1220;
+    border-color: #334155;
+    color: #e2e8f0;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 0.78rem;
+}
+
+.api-info-card {
+    margin-bottom: 1.25rem;
+    border-color: rgba(148, 163, 184, 0.22);
+}
+
+.api-info-card a {
+    color: #93c5fd;
+    text-decoration: none;
+}
+
+.api-info-card a:hover {
+    color: #bfdbfe;
+    text-decoration: underline;
+}
+
+.api-docs-page .config-block {
+    background: #0b1220;
+    border-color: #334155;
+    color: #cbd5e1;
+}
+
+/* Swagger container */
+.swagger-wrap {
+    padding: 0;
+    overflow: hidden;
+    border-color: #334155;
+    background: #111827;
+}
+
+.swagger-wrap #swagger-ui {
+    min-height: 760px;
+    direction: ltr;
+    text-align: left;
+}
+
+/* Hide default Swagger topbar (logo bar) */
+.api-docs-page .swagger-ui .topbar {
+    display: none;
+}
+
+.api-docs-page .swagger-ui {
+    color: #e2e8f0;
+    font-family: Vazirmatn, system-ui, sans-serif;
+}
+
+.api-docs-page .swagger-ui .information-container.wrapper,
+.api-docs-page .swagger-ui .scheme-container {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    box-shadow: none;
+    margin: 1rem 1rem 0;
+    padding: 1rem 1.25rem;
+}
+
+.api-docs-page .swagger-ui .info {
+    margin: 0;
+}
+
+.api-docs-page .swagger-ui .info .title {
+    color: #f1f5f9;
+    font-size: 1.65rem;
+}
+
+.api-docs-page .swagger-ui .info .title small {
+    background: rgba(59, 130, 246, 0.18);
+    color: #93c5fd;
+    border-radius: 6px;
+    padding: 0.15rem 0.45rem;
+}
+
+.api-docs-page .swagger-ui .info p,
+.api-docs-page .swagger-ui .info li,
+.api-docs-page .swagger-ui .info table {
+    color: #94a3b8;
+}
+
+.api-docs-page .swagger-ui .info a {
+    color: #60a5fa;
+}
+
+.api-docs-page .swagger-ui .info .base-url {
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* Authorize bar */
+.api-docs-page .swagger-ui .scheme-container {
+    margin-top: 0.75rem;
+}
+
+.api-docs-page .swagger-ui .btn.authorize {
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, 0.55);
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+.api-docs-page .swagger-ui .btn.authorize svg {
+    fill: #93c5fd;
+}
+
+.api-docs-page .swagger-ui .btn.authorize.unlocked {
+    color: #86efac;
+    border-color: rgba(34, 197, 94, 0.55);
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.api-docs-page .swagger-ui .btn.authorize.unlocked svg {
+    fill: #86efac;
+}
+
+/* Tag sections */
+.api-docs-page .swagger-ui .opblock-tag-section {
+    margin-bottom: 1rem;
+}
+
+.api-docs-page .swagger-ui .opblock-tag {
+    color: #f1f5f9;
+    border-bottom: 1px solid #334155;
+    font-size: 1.1rem;
+}
+
+.api-docs-page .swagger-ui .opblock-tag small {
+    color: #64748b;
+}
+
+.api-docs-page .swagger-ui .opblock-tag:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Operation blocks */
+.api-docs-page .swagger-ui .opblock {
+    border-radius: 12px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    box-shadow: none;
+    margin-bottom: 0.65rem;
+    overflow: hidden;
+}
+
+.api-docs-page .swagger-ui .opblock .opblock-summary {
+    border: none;
+    padding: 0.35rem 0.5rem;
+}
+
+.api-docs-page .swagger-ui .opblock .opblock-summary-method {
+    border-radius: 8px;
+    font-weight: 700;
+    min-width: 72px;
+    text-shadow: none;
+}
+
+.api-docs-page .swagger-ui .opblock .opblock-summary-path,
+.api-docs-page .swagger-ui .opblock .opblock-summary-path__deprecated {
+    color: #e2e8f0;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 0.92rem;
+}
+
+.api-docs-page .swagger-ui .opblock .opblock-summary-description {
+    color: #94a3b8;
+}
+
+.api-docs-page .swagger-ui .opblock.opblock-get {
+    background: rgba(34, 197, 94, 0.06);
+    border-color: rgba(34, 197, 94, 0.28);
+}
+
+.api-docs-page .swagger-ui .opblock.opblock-get .opblock-summary-method {
+    background: #15803d;
+}
+
+.api-docs-page .swagger-ui .opblock.opblock-post {
+    background: rgba(59, 130, 246, 0.06);
+    border-color: rgba(59, 130, 246, 0.28);
+}
+
+.api-docs-page .swagger-ui .opblock.opblock-post .opblock-summary-method {
+    background: #1d4ed8;
+}
+
+.api-docs-page .swagger-ui .opblock.opblock-put,
+.api-docs-page .swagger-ui .opblock.opblock-patch {
+    background: rgba(245, 158, 11, 0.06);
+    border-color: rgba(245, 158, 11, 0.28);
+}
+
+.api-docs-page .swagger-ui .opblock.opblock-put .opblock-summary-method,
+.api-docs-page .swagger-ui .opblock.opblock-patch .opblock-summary-method {
+    background: #b45309;
+}
+
+.api-docs-page .swagger-ui .opblock.opblock-delete {
+    background: rgba(239, 68, 68, 0.06);
+    border-color: rgba(239, 68, 68, 0.28);
+}
+
+.api-docs-page .swagger-ui .opblock.opblock-delete .opblock-summary-method {
+    background: #b91c1c;
+}
+
+.api-docs-page .swagger-ui .opblock-body,
+.api-docs-page .swagger-ui .opblock-section {
+    background: #111827;
+}
+
+.api-docs-page .swagger-ui .opblock-section-header {
+    background: #0b1220;
+    border: none;
+    box-shadow: none;
+}
+
+.api-docs-page .swagger-ui .opblock-section-header h4,
+.api-docs-page .swagger-ui .opblock-section-header label {
+    color: #cbd5e1;
+}
+
+.api-docs-page .swagger-ui .opblock-description-wrapper p,
+.api-docs-page .swagger-ui .opblock-external-docs-wrapper p,
+.api-docs-page .swagger-ui .opblock-title_normal,
+.api-docs-page .swagger-ui .parameter__name,
+.api-docs-page .swagger-ui .parameter__type,
+.api-docs-page .swagger-ui .response-col_status,
+.api-docs-page .swagger-ui table thead tr td,
+.api-docs-page .swagger-ui table thead tr th {
+    color: #cbd5e1;
+}
+
+.api-docs-page .swagger-ui .parameter__in {
+    color: #64748b;
+}
+
+.api-docs-page .swagger-ui .response-col_description__inner div,
+.api-docs-page .swagger-ui .markdown p,
+.api-docs-page .swagger-ui .markdown li {
+    color: #94a3b8;
+}
+
+/* Inputs & selects */
+.api-docs-page .swagger-ui input[type=text],
+.api-docs-page .swagger-ui input[type=password],
+.api-docs-page .swagger-ui input[type=search],
+.api-docs-page .swagger-ui input[type=email],
+.api-docs-page .swagger-ui input[type=file],
+.api-docs-page .swagger-ui textarea,
+.api-docs-page .swagger-ui select {
+    background: #0b1220;
+    border: 1px solid #334155;
+    color: #e2e8f0;
+    border-radius: 8px;
+    outline: none;
+}
+
+.api-docs-page .swagger-ui input:focus,
+.api-docs-page .swagger-ui textarea:focus,
+.api-docs-page .swagger-ui select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+.api-docs-page .swagger-ui textarea {
+    min-height: 56px;
+}
+
+/* Buttons */
+.api-docs-page .swagger-ui .btn {
+    border-radius: 8px;
+    box-shadow: none;
+    font-weight: 600;
+}
+
+.api-docs-page .swagger-ui .btn.execute {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+}
+
+.api-docs-page .swagger-ui .btn.execute:hover {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+.api-docs-page .swagger-ui .btn.cancel {
+    background: transparent;
+    border-color: #475569;
+    color: #cbd5e1;
+}
+
+.api-docs-page .swagger-ui .btn.try-out__btn {
+    border-color: #475569;
+    color: #cbd5e1;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.api-docs-page .swagger-ui .btn.try-out__btn.reset {
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #fca5a5;
+}
+
+/* Models */
+.api-docs-page .swagger-ui section.models {
+    border: 1px solid #334155;
+    border-radius: 12px;
+    background: #0f172a;
+    margin: 1rem;
+}
+
+.api-docs-page .swagger-ui section.models h4 {
+    color: #e2e8f0;
+    border-bottom: 1px solid #334155;
+}
+
+.api-docs-page .swagger-ui section.models .model-container {
+    background: transparent;
+}
+
+.api-docs-page .swagger-ui .model-box,
+.api-docs-page .swagger-ui .model {
+    background: #111827;
+}
+
+.api-docs-page .swagger-ui .model-title {
+    color: #e2e8f0;
+}
+
+.api-docs-page .swagger-ui .prop-type {
+    color: #93c5fd;
+}
+
+.api-docs-page .swagger-ui .prop-format {
+    color: #64748b;
+}
+
+.api-docs-page .swagger-ui .model .property.primitive {
+    color: #cbd5e1;
+}
+
+/* Response blocks */
+.api-docs-page .swagger-ui .responses-inner h4,
+.api-docs-page .swagger-ui .responses-inner h5 {
+    color: #e2e8f0;
+}
+
+.api-docs-page .swagger-ui .response-control-media-type__accept-message {
+    color: #64748b;
+}
+
+.api-docs-page .swagger-ui .highlight-code,
+.api-docs-page .swagger-ui .microlight {
+    background: #0b1220 !important;
+    border-radius: 8px;
+    color: #cbd5e1 !important;
+}
+
+.api-docs-page .swagger-ui .copy-to-clipboard {
+    background: #1e293b;
+    border-radius: 6px;
+}
+
+.api-docs-page .swagger-ui .copy-to-clipboard button {
+    background: transparent;
+}
+
+/* Auth modal */
+.api-docs-page .swagger-ui .dialog-ux .modal-ux {
+    background: #111827;
+    border: 1px solid #334155;
+    border-radius: 14px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+}
+
+.api-docs-page .swagger-ui .dialog-ux .modal-ux-header {
+    border-bottom: 1px solid #334155;
+}
+
+.api-docs-page .swagger-ui .dialog-ux .modal-ux-header h3 {
+    color: #f1f5f9;
+}
+
+.api-docs-page .swagger-ui .dialog-ux .modal-ux-content h4,
+.api-docs-page .swagger-ui .dialog-ux .modal-ux-content label {
+    color: #cbd5e1;
+}
+
+.api-docs-page .swagger-ui .dialog-ux .modal-ux-content p {
+    color: #94a3b8;
+}
+
+.api-docs-page .swagger-ui .auth-container {
+    border-color: #334155;
+}
+
+.api-docs-page .swagger-ui .auth-btn-wrapper .btn-done {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+}
+
+/* Tables */
+.api-docs-page .swagger-ui table tbody tr td {
+    color: #94a3b8;
+    border-color: #334155;
+}
+
+.api-docs-page .swagger-ui .response-col_links {
+    color: #64748b;
+}
+
+/* Loading */
+.api-docs-page .swagger-ui .loading-container .loading {
+    color: #94a3b8;
+}
+
+@media (max-width: 768px) {
+    .api-docs-page .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .api-docs-page .swagger-ui .information-container.wrapper,
+    .api-docs-page .swagger-ui .scheme-container,
+    .api-docs-page .swagger-ui section.models {
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+    }
+}
