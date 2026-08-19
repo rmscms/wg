@@ -8,7 +8,7 @@ requireLogin();
 $filename = basename((string) ($_GET['file'] ?? ''));
 
 try {
-    $backupManager = new WgPanel\BackupManager(dirname(__DIR__) . '/storage/backups');
+    $backupManager = backupManager();
     $path = $backupManager->resolveBackupPath($filename);
 } catch (Throwable $e) {
     http_response_code(404);

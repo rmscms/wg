@@ -65,6 +65,8 @@ return [
         'check_limits' => '/opt/wg-panel/scripts/check-limits.php',
         'sync_wg' => '/opt/wg-panel/scripts/sync-wg.php',
         'backup' => '/opt/wg-panel/scripts/backup.php',
+        'read_wg_conf' => '/opt/wg-panel/scripts/read-wg-conf.sh',
+        'restore_wg_conf' => '/opt/wg-panel/scripts/restore-wg-conf.sh',
     ],
 
     'backup' => [
@@ -74,5 +76,6 @@ return [
         'include_database' => true,
         'retention_count' => 14,
         'last_run_at' => 0,
+        'backup_dir' => '',
     ],
 ];

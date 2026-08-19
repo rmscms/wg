@@ -14,7 +14,51 @@ final class BackupManager
 
     public function __construct(string $backupDir)
     {
-        $this->backupDir = rtrim($backupDir, '/\\');
+        $this->backupDir = rtrim(str_replace('\\', '/', $backupDir), '/');
+    }
+
+    public function directory(): string
+    {
+        return $this->backupDir;
+    }
+
+    public function isWritable(): bool
+    {
+        if (is_dir($this->backupDir)) {
+            return is_writable($this->backupDir);
+        }
+
+        $parent = dirname($this->backupDir);
+
+        return is_dir($parent) && is_writable($parent);
+    }
+
+    public static function defaultStorageDir(string $panelRoot): string
+    {
+        return rtrim(str_replace('\\', '/', $panelRoot), '/') . '/storage/backups';
+    }
+
+    public static function resolveStorageDir(array $config, string $panelRoot): string
+    {
+        $default = self::defaultStorageDir($panelRoot);
+        $custom = trim(str_replace('\\', '/', (string) ($config['backup']['backup_dir'] ?? '')));
+
+        if ($custom === '') {
+            return $default;
+        }
+
+        if (!str_starts_with($custom, '/') || str_contains($custom, '..')) {
+            throw new RuntimeException('مسیر بک‌آپ باید مطلق باشد و شامل .. نباشد.');
+        }
+
+        $custom = rtrim($custom, '/');
+        $publicDir = rtrim(str_replace('\\', '/', $panelRoot), '/') . '/public';
+
+        if ($custom === $publicDir || str_starts_with($custom . '/', $publicDir . '/')) {
+            throw new RuntimeException('مسیر بک‌آپ نمی‌تواند داخل public باشد.');
+        }
+
+        return $custom;
     }
 
     /** @return array{filename: string, path: string, size: int, created_at: int} */
@@ -70,6 +114,53 @@ final class BackupManager
             'path' => $archivePath,
             'size' => (int) filesize($archivePath),
             'created_at' => $timestamp,
+        ];
+    }
+
+    /**
+     * @return array{filename: string, restored: list<string>}
+     */
+    public function restore(array $config, string $filename): array
+    {
+        $archivePath = $this->resolveBackupPath($filename);
+        $stagingDir = $this->backupDir . '/.restore_' . bin2hex(random_bytes(4));
+
+        if (!mkdir($stagingDir, 0750, true) && !is_dir($stagingDir)) {
+            throw new RuntimeException('امکان ساخت پوشه موقت ریستور وجود ندارد.');
+        }
+
+        $restored = [];
+
+        try {
+            $this->extractArchive($archivePath, $stagingDir);
+
+            $sqlPath = $stagingDir . '/database.sql';
+            $confPath = $stagingDir . '/wg0.conf';
+            $hasSql = is_file($sqlPath) && filesize($sqlPath) > 0;
+            $hasConf = is_file($confPath) && filesize($confPath) > 0;
+
+            if (!$hasSql && !$hasConf) {
+                throw new RuntimeException('آرشیو بک‌آپ معتبر نیست (database.sql یا wg0.conf یافت نشد).');
+            }
+
+            if ($hasSql) {
+                $this->restoreDatabase($config, $sqlPath);
+                $restored[] = 'database';
+            }
+
+            if ($hasConf) {
+                $this->restoreWireguardConfig($config, $confPath);
+                $restored[] = 'wg0.conf';
+            }
+
+            $this->syncWireguardAfterRestore($config);
+        } finally {
+            $this->removeDirectory($stagingDir);
+        }
+
+        return [
+            'filename' => $filename,
+            'restored' => $restored,
         ];
     }
 
@@ -208,19 +299,49 @@ final class BackupManager
     {
         $interface = (string) ($config['wireguard']['interface'] ?? 'wg0');
         $source = (string) ($config['wireguard']['config_path'] ?? "/etc/wireguard/{$interface}.conf");
-
-        if (!is_readable($source)) {
-            throw new RuntimeException('فایل WireGuard قابل خواندن نیست: ' . $source);
-        }
-
         $target = $stagingDir . '/wg0.conf';
 
-        if (@copy($source, $target) !== true) {
-            throw new RuntimeException('کپی wg0.conf ناموفق بود.');
+        if (is_readable($source) && @copy($source, $target) === true) {
+            return;
+        }
+
+        $script = (string) ($config['scripts']['read_wg_conf'] ?? dirname(__DIR__) . '/scripts/read-wg-conf.sh');
+        Shell::runScript($script, [$interface, $target], true);
+
+        if (!is_file($target) || filesize($target) === 0) {
+            throw new RuntimeException('فایل WireGuard قابل خواندن نیست: ' . $source);
         }
     }
 
+    private function restoreWireguardConfig(array $config, string $sourcePath): void
+    {
+        $interface = (string) ($config['wireguard']['interface'] ?? 'wg0');
+        $script = (string) ($config['scripts']['restore_wg_conf'] ?? dirname(__DIR__) . '/scripts/restore-wg-conf.sh');
+        Shell::runScript($script, [$sourcePath, $interface], true);
+    }
+
+    private function syncWireguardAfterRestore(array $config): void
+    {
+        $script = (string) ($config['scripts']['sync_wg'] ?? dirname(__DIR__) . '/scripts/sync-wg.php');
+
+        if (!is_file($script)) {
+            return;
+        }
+
+        Shell::run('/usr/bin/php ' . escapeshellarg($script), false, true);
+    }
+
     private function dumpDatabase(array $config, string $targetPath): void
+    {
+        $this->runMysqlClient($config, $targetPath, true);
+    }
+
+    private function restoreDatabase(array $config, string $sqlPath): void
+    {
+        $this->runMysqlClient($config, $sqlPath, false);
+    }
+
+    private function runMysqlClient(array $config, string $sqlPath, bool $dump): void
     {
         $db = $config['database'] ?? [];
         $host = (string) ($db['host'] ?? '127.0.0.1');
@@ -233,10 +354,10 @@ final class BackupManager
             throw new RuntimeException('تنظیمات دیتابیس ناقص است.');
         }
 
-        $cnfPath = tempnam(sys_get_temp_dir(), 'wg_dump_');
+        $cnfPath = tempnam(sys_get_temp_dir(), 'wg_sql_');
 
         if ($cnfPath === false) {
-            throw new RuntimeException('ساخت فایل موقت mysqldump ناموفق بود.');
+            throw new RuntimeException('ساخت فایل موقت SQL ناموفق بود.');
         }
 
         $cnfContent = implode(PHP_EOL, [
@@ -250,10 +371,16 @@ final class BackupManager
         file_put_contents($cnfPath, $cnfContent);
         @chmod($cnfPath, 0600);
 
-        $command = 'mysqldump --defaults-extra-file=' . escapeshellarg($cnfPath)
-            . ' --single-transaction --routines --triggers '
-            . escapeshellarg($name)
-            . ' > ' . escapeshellarg($targetPath);
+        if ($dump) {
+            $command = 'mysqldump --defaults-extra-file=' . escapeshellarg($cnfPath)
+                . ' --single-transaction --routines --triggers '
+                . escapeshellarg($name)
+                . ' > ' . escapeshellarg($sqlPath);
+        } else {
+            $command = 'mysql --defaults-extra-file=' . escapeshellarg($cnfPath)
+                . ' ' . escapeshellarg($name)
+                . ' < ' . escapeshellarg($sqlPath);
+        }
 
         try {
             Shell::run($command, true, false);
@@ -261,7 +388,7 @@ final class BackupManager
             @unlink($cnfPath);
         }
 
-        if (!is_file($targetPath) || filesize($targetPath) === 0) {
+        if ($dump && (!is_file($sqlPath) || filesize($sqlPath) === 0)) {
             throw new RuntimeException('خروجی mysqldump خالی است.');
         }
     }
@@ -274,6 +401,14 @@ final class BackupManager
 
         $command = 'tar -czf ' . escapeshellarg($archivePath)
             . ' -C ' . escapeshellarg($stagingDir) . ' .';
+
+        Shell::run($command, true, false);
+    }
+
+    private function extractArchive(string $archivePath, string $stagingDir): void
+    {
+        $command = 'tar -xzf ' . escapeshellarg($archivePath)
+            . ' -C ' . escapeshellarg($stagingDir);
 
         Shell::run($command, true, false);
     }

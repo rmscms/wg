@@ -56,12 +56,15 @@ final class Database
         self::ensureColumn($db, 'accounts', 'last_wg_rx_bytes', 'BIGINT UNSIGNED NULL DEFAULT NULL');
         self::ensureColumn($db, 'accounts', 'last_wg_tx_bytes', 'BIGINT UNSIGNED NULL DEFAULT NULL');
         self::ensureColumn($db, 'accounts', 'subscribe_token', 'VARCHAR(64) NULL DEFAULT NULL');
+        self::ensureColumn($db, 'accounts', 'sub_short', 'VARCHAR(12) NULL DEFAULT NULL');
         self::ensureColumn($db, 'accounts', 'expiry_mode', "VARCHAR(20) NOT NULL DEFAULT 'fixed'");
         self::ensureColumn($db, 'accounts', 'expiry_duration_days', 'INT UNSIGNED NULL DEFAULT NULL');
         self::ensureColumn($db, 'accounts', 'first_connected_at', 'DATETIME NULL DEFAULT NULL');
         self::ensureColumn($db, 'accounts', 'expiry_await_reconnect', 'TINYINT(1) NOT NULL DEFAULT 0');
         self::ensureUniqueIndex($db, 'accounts', 'uk_accounts_subscribe_token', 'subscribe_token');
+        self::ensureUniqueIndex($db, 'accounts', 'uk_accounts_sub_short', 'sub_short');
         self::backfillSubscribeTokens($db);
+        SchemaMigrator::run($db);
     }
 
     private static function ensureUniqueIndex(PDO $db, string $table, string $indexName, string $column): void

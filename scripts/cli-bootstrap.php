@@ -10,7 +10,7 @@ if (!is_file($configPath)) {
 }
 
 $config = require $configPath;
-date_default_timezone_set($config['app']['timezone']);
+date_default_timezone_set($config['app']['timezone'] ?? 'UTC');
 
 $autoload = dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -22,4 +22,7 @@ if (!is_file($autoload)) {
 require_once $autoload;
 
 $db = WgPanel\Database::connect($config);
+WgPanel\SettingsStore::ensureSeeded($db, $config);
+$config = WgPanel\SettingsStore::overlay($db, $config);
+date_default_timezone_set($config['app']['timezone'] ?? 'UTC');
 $wgManager = new WgPanel\WireGuardManager($db, $config);

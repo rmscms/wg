@@ -178,15 +178,23 @@ php /opt/wg-panel/scripts/check-limits.php
 
 ## 🗄️ دیتابیس
 
-دو جدول اصلی:
+دو جدول اصلی به علاوه تنظیمات پنل:
 
 ### `accounts`
 
-نام، کلید، IP، سقف سرعت، سقف حجم، مصرف، توکن ساب، انقضا، حالت انقضا، فعال/غیرفعال.
+نام، کلید، IP، سقف سرعت، سقف حجم، مصرف، توکن ساب، لینک کوتاه (`sub_short`)، انقضا، حالت انقضا، فعال/غیرفعال.
 
 ### `traffic_logs`
 
 تاریخچه rx/tx هر اکانت.
+
+### `panel_settings`
+
+تنظیمات قابل‌تغییر پنل (JSON هر گروه).
+
+### `schema_migrations`
+
+مایگریشن‌های اجراشده.
 
 ساب‌نت پیش‌فرض: `10.66.0.0/19` (~۸۱۹۰ اکانت)
 
@@ -206,11 +214,15 @@ php /opt/wg-panel/scripts/check-limits.php
 
 ---
 
-## ⚙️ تنظیمات کلیدی (`config/config.php`)
+## ⚙️ تنظیمات کلیدی
 
 از روی `config/config.example.php` ساخته می‌شود.
 
-بخش‌ها: `app` · `api` · `admin` · `database` · `wireguard` · `scripts` · `backup`
+`config.php` (mode 640) اتصال DB و مسیرهای سیستم را نگه می‌دارد.
+
+تنظیمات قابل‌تغییر پنل (endpoint، subscribe، ادمین، API، بک‌آپ) در جدول `panel_settings` است.
+
+خواندن: فایل + overlay دیتابیس. ذخیره: همیشه DB. مایگریشن با `SchemaMigrator` هنگام وصل DB.
 
 آنلاین بودن: handshake در `online_timeout` ثانیه اخیر.
 

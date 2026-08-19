@@ -257,13 +257,17 @@ return [
         'mtu' => 142,
         'handshake_timeout' => 180,
         'online_timeout' => 180,
+        'server_public_key' => '${SERVER_PUBLIC}',
     ],
     'scripts' => [
         'apply_peer' => '${PANEL_DIR}/scripts/apply-peer.sh',
         'remove_peer' => '${PANEL_DIR}/scripts/remove-peer.sh',
         'sync_traffic' => '${PANEL_DIR}/scripts/sync-traffic.php',
         'check_limits' => '${PANEL_DIR}/scripts/check-limits.php',
+        'sync_wg' => '${PANEL_DIR}/scripts/sync-wg.php',
         'backup' => '${PANEL_DIR}/scripts/backup.php',
+        'read_wg_conf' => '${PANEL_DIR}/scripts/read-wg-conf.sh',
+        'restore_wg_conf' => '${PANEL_DIR}/scripts/restore-wg-conf.sh',
     ],
     'backup' => [
         'enabled' => false,
@@ -272,6 +276,7 @@ return [
         'include_database' => true,
         'retention_count' => 14,
         'last_run_at' => 0,
+        'backup_dir' => '',
     ],
 ];
 PHP
@@ -348,6 +353,12 @@ file_put_contents(\$file, "<?php\\n\\ndeclare(strict_types=1);\\n\\nreturn " . \
 PHPFIX
 fi
 
+chmod 640 "$PANEL_DIR/config/config.php"
+chown root:www-data "$PANEL_DIR/config/config.php"
+
+echo "==> Applying database migrations..."
+php "$PANEL_DIR/scripts/migrate.php" || true
+
 echo "==> Configuring sudo..."
 cat > /etc/sudoers.d/wg-panel <<SUDO
 www-data ALL=(root) NOPASSWD: ${PANEL_DIR}/scripts/apply-peer.sh
@@ -366,6 +377,10 @@ www-data ALL=(root) NOPASSWD: /usr/bin/wg show ${WG_INTERFACE} latest-handshakes
 www-data ALL=(root) NOPASSWD: /usr/bin/wg show ${WG_INTERFACE} peers
 www-data ALL=(root) NOPASSWD: /usr/bin/wg show ${WG_INTERFACE} dump
 www-data ALL=(root) NOPASSWD: /usr/bin/wg set ${WG_INTERFACE} peer *
+www-data ALL=(root) NOPASSWD: ${PANEL_DIR}/scripts/read-wg-conf.sh
+www-data ALL=(root) NOPASSWD: /bin/bash ${PANEL_DIR}/scripts/read-wg-conf.sh *
+www-data ALL=(root) NOPASSWD: ${PANEL_DIR}/scripts/restore-wg-conf.sh
+www-data ALL=(root) NOPASSWD: /bin/bash ${PANEL_DIR}/scripts/restore-wg-conf.sh *
 SUDO
 chmod 440 /etc/sudoers.d/wg-panel
 

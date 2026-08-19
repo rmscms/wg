@@ -42,7 +42,7 @@ if (!is_file($configPath)) {
 }
 
 $config = require $configPath;
-date_default_timezone_set($config['app']['timezone']);
+date_default_timezone_set($config['app']['timezone'] ?? 'UTC');
 
 $autoload = dirname(__DIR__) . '/vendor/autoload.php';
 if (!is_file($autoload)) {
@@ -52,6 +52,9 @@ if (!is_file($autoload)) {
 require_once $autoload;
 
 $db = WgPanel\Database::connect($config);
+WgPanel\SettingsStore::ensureSeeded($db, $config);
+$config = WgPanel\SettingsStore::overlay($db, $config);
+date_default_timezone_set($config['app']['timezone'] ?? 'UTC');
 $wgManager = new WgPanel\WireGuardManager($db, $config);
 
 function isLoggedIn(): bool
@@ -85,12 +88,26 @@ function loginThrottle(): WgPanel\LoginThrottle
 function backupManager(): WgPanel\BackupManager
 {
     static $manager = null;
+    static $dir = null;
 
-    if ($manager === null) {
-        $manager = new WgPanel\BackupManager(dirname(__DIR__) . '/storage/backups');
+    global $config;
+
+    $resolved = WgPanel\BackupManager::resolveStorageDir($config, dirname(__DIR__));
+
+    if ($manager === null || $dir !== $resolved) {
+        $manager = new WgPanel\BackupManager($resolved);
+        $dir = $resolved;
     }
 
     return $manager;
+}
+
+function savePanelSettings(array $changes): void
+{
+    global $db, $config;
+
+    $configPath = dirname(__DIR__) . '/config/config.php';
+    $config = WgPanel\SettingsStore::update($db, $config, $changes, $configPath);
 }
 
 function requireLogin(): void

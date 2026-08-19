@@ -6,7 +6,9 @@ require __DIR__ . '/cli-bootstrap.php';
 
 $rootDir = dirname(__DIR__);
 $configPath = $rootDir . '/config/config.php';
-$backupManager = new WgPanel\BackupManager($rootDir . '/storage/backups');
+$backupManager = new WgPanel\BackupManager(
+    WgPanel\BackupManager::resolveStorageDir($config, $rootDir)
+);
 
 try {
     if (!$backupManager->shouldRunAuto($config)) {
@@ -15,8 +17,12 @@ try {
 
     $result = $backupManager->runConfigured($config);
 
-    $writer = new WgPanel\ConfigWriter($configPath);
-    $writer->update(['backup' => ['last_run_at' => time()]]);
+    $config = WgPanel\SettingsStore::update(
+        $db,
+        $config,
+        ['backup' => ['last_run_at' => time()]],
+        $configPath
+    );
 
     echo '[' . date('c') . '] Backup created: ' . $result['filename']
         . ' (' . WgPanel\BackupManager::formatBytes($result['size']) . ')' . PHP_EOL;
