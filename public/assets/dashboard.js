@@ -193,6 +193,8 @@
             }
         }
 
+        window.wgApplyDashboardPayload = applyPayload;
+
         function fetchList(overrides, immediate) {
             const params = currentParams(overrides);
 

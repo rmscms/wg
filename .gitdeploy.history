@@ -1,5 +1,25 @@
 [
   {
+    "Id": 4,
+    "Title": "Deploy main to production",
+    "Date": "2026-08-19T16:26:29.3427934+03:30",
+    "FilesCount": 9,
+    "Branch": "main",
+    "Status": "Success",
+    "Files": [
+      "config/config.example.php",
+      "docs/overview.md",
+      "public/assets/ip-tags-input.js",
+      "public/assets/ip-tags.css",
+      "public/settings.php",
+      "src/Api/ApiAuth.php",
+      "src/ApiAllowedIp.php",
+      "src/ConfigWriter.php",
+      "src/SettingsStore.php"
+    ],
+    "CommitHash": "f896736cb7366fa120db7fad61b532eb51e2f717"
+  },
+  {
     "Id": 3,
     "Title": "Deploy main to production",
     "Date": "2026-08-19T16:06:22.0277589+03:30",
@@ -79,23 +99,25 @@
     "CommitHash": "f8a4ab37d8f4b00f2fa271237cbb0fc9d2acab7c"
   },
   {
-    "Id": 4,
+    "Id": 5,
     "Title": "Deploy main to production",
-    "Date": "2026-08-19T16:26:29.3427934+03:30",
-    "FilesCount": 9,
+    "Date": "2026-08-19T17:06:00.9927732+03:30",
+    "FilesCount": 11,
     "Branch": "main",
     "Status": "Success",
     "Files": [
+      "README.md",
       "config/config.example.php",
       "docs/overview.md",
-      "public/assets/ip-tags-input.js",
-      "public/assets/ip-tags.css",
-      "public/settings.php",
-      "src/Api/ApiAuth.php",
-      "src/ApiAllowedIp.php",
-      "src/ConfigWriter.php",
-      "src/SettingsStore.php"
+      "install.sh",
+      "public/api/openapi.yaml",
+      "scripts/apply-peer.sh",
+      "scripts/fix-permissions.sh",
+      "scripts/persist-wg-peers.sh",
+      "scripts/remove-peer.sh",
+      "src/Api/Router.php",
+      "src/WireGuardManager.php"
     ],
-    "CommitHash": "f896736cb7366fa120db7fad61b532eb51e2f717"
+    "CommitHash": "c20303fe4bccb82beefdce7fd8f4eb719320f813"
   }
 ]

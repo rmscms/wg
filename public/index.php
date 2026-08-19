@@ -16,8 +16,17 @@ if (($_GET['ajax'] ?? '') === 'search') {
 }
 
 require __DIR__ . '/includes/dashboard-list-fragments.php';
+require __DIR__ . '/includes/account-modal-ajax.php';
+
+if (($_GET['ajax'] ?? '') === 'account-modal') {
+    sendAccountModalJson($wgManager);
+}
 
 $listState = dashboardStateFromRequest();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['ajax'] ?? '') === 'account-save') {
+    sendAccountModalSaveJson($wgManager);
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCsrf($_POST['csrf_token'] ?? null)) {
@@ -127,6 +136,7 @@ $page = $list['page'];
 $perPage = $list['per_page'];
 
 $pageTitle = 'مدیریت اکانت‌ها';
+$pageStyles = ['/assets/account-modal.css'];
 require __DIR__ . '/includes/header.php';
 ?>
 
@@ -269,6 +279,10 @@ require __DIR__ . '/includes/header.php';
     <?= dashboardListFields($listState) ?>
 </form>
 
+<?php require __DIR__ . '/includes/account-modal.php'; ?>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 <script src="/assets/live-status.js"></script>
 <script src="/assets/dashboard.js"></script>
+<script src="/assets/account-modal.js"></script>
 <?php require __DIR__ . '/includes/footer.php'; ?>

@@ -129,14 +129,14 @@ function dashboardRenderAccountsTbody(array $list, WireGuardManager $wgManager):
                             </svg>
                         </button>
                         <div class="dd-menu" hidden>
-                            <a href="/view.php?id=<?= (int) $account['id'] ?>" class="dd-item">
+                            <a href="/?account=<?= (int) $account['id'] ?>&tab=view" class="dd-item js-account-modal" data-account-id="<?= (int) $account['id'] ?>" data-am-tab="view">
                                 <svg class="dd-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
                                     <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5Z"/>
                                     <circle cx="8" cy="8" r="2"/>
                                 </svg>
                                 <span>جزئیات</span>
                             </a>
-                            <a href="/edit.php?id=<?= (int) $account['id'] ?>" class="dd-item">
+                            <a href="/?account=<?= (int) $account['id'] ?>&tab=edit" class="dd-item js-account-modal" data-account-id="<?= (int) $account['id'] ?>" data-am-tab="edit">
                                 <svg class="dd-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M11 2l3 3-8 8H3v-3l8-8Z"/>
                                 </svg>
