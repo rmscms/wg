@@ -1101,17 +1101,38 @@ final class WireGuardManager
         }
 
         $keys = [];
+        $isHeader = true;
 
         foreach (preg_split('/\R/', trim((string) ($result['output'] ?? ''))) ?: [] as $line) {
             if ($line === '' || !str_contains($line, "\t")) {
                 continue;
             }
 
-            $publicKey = trim(explode("\t", $line)[0] ?? '');
+            $parts = explode("\t", $line);
+
+            // First dump line is the interface (private-key, public-key, listen-port, fwmark), not a peer.
+            if ($isHeader) {
+                $isHeader = false;
+                continue;
+            }
+
+            if (count($parts) < 5) {
+                continue;
+            }
+
+            $publicKey = trim($parts[0] ?? '');
 
             if ($this->isValidWireGuardPublicKey($publicKey)) {
                 $keys[] = $publicKey;
             }
+        }
+
+        $serverPub = trim((string) ($this->config['wireguard']['server_public_key'] ?? ''));
+        if ($serverPub !== '' && $serverPub !== '(none)') {
+            $keys = array_values(array_filter(
+                $keys,
+                static fn(string $key): bool => $key !== $serverPub
+            ));
         }
 
         return $keys;
