@@ -1,2 +1,72 @@
+# ══════════════════════════════════════════
+#  نباید بره GitHub و نباید با FTP اووررایت بشه
+# ══════════════════════════════════════════
+
+# 🔐 تنظیمات زنده سرور (رمز، توکن، هش ادمین)
+config/config.php
+config/config.local.php
+*.local.php
+.env
+.env.*
+!.env.example
+
+# 🔑 کانفیگ دیپلوی لوکال (هاست و رمز FTP)
+.gitdeploy.config
+
+# 📦 وابستگی‌های Composer (روی سرور: composer install)
 /vendor/
-composer.lock
+
+# 💾 دادهٔ زمان اجرا — سشن، بکاپ، قفل ورود
+/storage/
+storage/sessions/
+storage/login-throttle/
+storage/backups/
+
+# 📜 لاگ‌ها
+*.log
+error_log
+php_errors.log
+/logs/
+
+# 📦 بکاپ و دامپ (schema و migration می‌مونن)
+database.sql
+**/database.sql
+*.sql
+!database/schema.sql
+!database/migrations/*.sql
+*.sql.gz
+*.tar.gz
+*.zip
+*.bak
+*.old
+*.orig
+
+# 🖥️ ویندوز / مک / ادیتور
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+*.swp
+*.swo
+*~
+*.tmp
+*.temp
+
+# 🧰 IDE
+.idea/
+*.iml
+.vscode/
+*.code-workspace
+
+# 🐘 PHP / Composer
+.phpunit.result.cache
+.phpunit.cache/
+.php-cs-fixer.cache
+.php_cs.cache
+composer.phar
+
+# 🧪 تست و کش
+/coverage/
+/tmp/
+node_modules/
