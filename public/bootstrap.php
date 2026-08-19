@@ -52,10 +52,14 @@ if (!is_file($autoload)) {
 require_once $autoload;
 
 $db = WgPanel\Database::connect($config);
-WgPanel\SettingsStore::ensureSeeded($db, $config);
+$seededGroups = WgPanel\SettingsStore::ensureSeeded($db, $config);
 $config = WgPanel\SettingsStore::overlay($db, $config);
 date_default_timezone_set($config['app']['timezone'] ?? 'UTC');
 $wgManager = new WgPanel\WireGuardManager($db, $config);
+queueDatabaseUpgradeNotice(
+    WgPanel\Database::consumeUpgradeNotes(),
+    $seededGroups
+);
 
 function isLoggedIn(): bool
 {
@@ -244,3 +248,48 @@ function e(?string $value): string
 {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
+
+/**
+ * @param list<string> $migrationNotes
+ * @param list<string> $seededGroups
+ */
+function queueDatabaseUpgradeNotice(array $migrationNotes, array $seededGroups): void
+{
+    $parts = $migrationNotes;
+
+    if ($seededGroups !== []) {
+        $parts[] = 'کپی تنظیمات از فایل به دیتابیس';
+    }
+
+    if ($parts === []) {
+        consumePendingUpgradeNotice();
+
+        return;
+    }
+
+    $message = 'به‌روزرسانی دیتابیس انجام شد: ' . implode('، ', $parts) . '.';
+
+    if (isLoggedIn()) {
+        flash('success', $message);
+
+        return;
+    }
+
+    $_SESSION['pending_upgrade_notice'] = $message;
+}
+
+function consumePendingUpgradeNotice(): void
+{
+    if (!isLoggedIn() || empty($_SESSION['pending_upgrade_notice'])) {
+        return;
+    }
+
+    if (empty($_SESSION['flash'])) {
+        flash('success', (string) $_SESSION['pending_upgrade_notice']);
+    }
+
+    unset($_SESSION['pending_upgrade_notice']);
+}
+
+consumePendingUpgradeNotice();
+

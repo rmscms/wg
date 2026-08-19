@@ -3,7 +3,8 @@
     "description": "WireGuard management panel",
     "require": {
         "php": ">=8.3",
-        "chillerlan/php-qrcode": "^5.0"
+        "chillerlan/php-qrcode": "^5.0",
+        "telegram-bot/api": "^2.5"
     },
     "autoload": {
         "psr-4": {

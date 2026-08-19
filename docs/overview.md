@@ -43,7 +43,7 @@
 | 📜 | Cron | همگام‌سازی ترافیک و محدودیت |
 | 🔒 | Certbot | گواهی Let's Encrypt |
 | 🚦 | tc / HTB | سقف سرعت هر peer |
-| 📦 | Composer | پکیج QR (`chillerlan/php-qrcode`) |
+| 📦 | Composer | QR (`chillerlan/php-qrcode`) و تلگرام (`telegram-bot/api`) |
 
 مسیر نصب روی سرور: `/opt/wg-panel`
 
@@ -77,7 +77,7 @@ wg-panel/
 | ➕ | `create.php` | ساخت اکانت جدید |
 | ✏️ | `edit.php` | ویرایش اکانت |
 | 👁️ | `view.php` | جزئیات، QR، لینک‌ها |
-| ⚙️ | `settings.php` | WG، پنل، ادمین، API، بکاپ |
+| ⚙️ | `settings.php` | WG، پنل، ادمین، API، بکاپ، تلگرام |
 | 🔑 | `login.php` | ورود (یا مسیر سفارشی) |
 | 🚪 | `logout.php` | خروج |
 | 📥 | `download.php` | دانلود `.conf` |
@@ -143,6 +143,7 @@ wg-panel/
 | 📷 | `QrGenerator` | QR محلی |
 | ✍️ | `ConfigWriter` | ذخیره تنظیمات در `config.php` |
 | 💾 | `BackupManager` | آرشیو بکاپ |
+| 📲 | `TelegramBridge` | ارسال پیام و فایل بکاپ به تلگرام |
 | 🛡️ | `LoginThrottle` | قفل ورود بعد از تلاش زیاد |
 | 🚪 | `AdminPath` | مسیر ورود سفارشی |
 | 🐚 | `Shell` | اجرای دستور با sudo |
@@ -169,7 +170,7 @@ php /opt/wg-panel/scripts/check-limits.php
 | ⛔ | `check-limits.php` | قطع اکانت منقضی یا پر حجم |
 | 🔄 | `sync-wg.php` | همگام DB ↔ `wg0.conf` ↔ runtime |
 | 🚦 | `restore-tc.php` | بازگردانی قوانین سرعت |
-| 💾 | `backup.php` | بکاپ زمان‌بندی‌شده |
+| 💾 | `backup.php` | بکاپ زمان‌بندی‌شده + ارسال اختیاری به تلگرام |
 | ➕ | `apply-peer.sh` | افزودن peer زنده |
 | ➖ | `remove-peer.sh` | حذف peer زنده |
 | 🧪 | `debug-traffic.php` | عیب‌یابی ترافیک |

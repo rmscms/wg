@@ -64,7 +64,23 @@ final class Database
         self::ensureUniqueIndex($db, 'accounts', 'uk_accounts_subscribe_token', 'subscribe_token');
         self::ensureUniqueIndex($db, 'accounts', 'uk_accounts_sub_short', 'sub_short');
         self::backfillSubscribeTokens($db);
-        SchemaMigrator::run($db);
+        $applied = SchemaMigrator::run($db);
+
+        foreach ($applied as $id) {
+            self::$upgradeNotes[] = SchemaMigrator::label($id);
+        }
+    }
+
+    /** @var list<string> */
+    private static array $upgradeNotes = [];
+
+    /** @return list<string> */
+    public static function consumeUpgradeNotes(): array
+    {
+        $notes = self::$upgradeNotes;
+        self::$upgradeNotes = [];
+
+        return $notes;
     }
 
     private static function ensureUniqueIndex(PDO $db, string $table, string $indexName, string $column): void

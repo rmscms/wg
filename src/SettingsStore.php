@@ -31,13 +31,23 @@ final class SettingsStore
             'last_run_at',
             'backup_dir',
         ],
+        'telegram' => [
+            'bot_token',
+            'chat_id',
+            'send_auto_backup',
+        ],
     ];
 
-    public static function ensureSeeded(PDO $db, array $config): void
+    /**
+     * @return list<string> newly seeded setting groups
+     */
+    public static function ensureSeeded(PDO $db, array $config): array
     {
         if (!self::tableExists($db)) {
-            return;
+            return [];
         }
+
+        $seeded = [];
 
         foreach (self::GROUPS as $group => $keys) {
             if (self::hasKey($db, $group)) {
@@ -46,7 +56,10 @@ final class SettingsStore
 
             $payload = self::pick($config[$group] ?? [], $keys);
             self::writeGroup($db, $group, $payload);
+            $seeded[] = $group;
         }
+
+        return $seeded;
     }
 
     public static function overlay(PDO $db, array $config): array

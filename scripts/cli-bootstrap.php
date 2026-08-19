@@ -22,7 +22,16 @@ if (!is_file($autoload)) {
 require_once $autoload;
 
 $db = WgPanel\Database::connect($config);
-WgPanel\SettingsStore::ensureSeeded($db, $config);
+$seededGroups = WgPanel\SettingsStore::ensureSeeded($db, $config);
 $config = WgPanel\SettingsStore::overlay($db, $config);
 date_default_timezone_set($config['app']['timezone'] ?? 'UTC');
 $wgManager = new WgPanel\WireGuardManager($db, $config);
+
+$upgradeNotes = WgPanel\Database::consumeUpgradeNotes();
+if ($upgradeNotes !== [] || $seededGroups !== []) {
+    $bits = $upgradeNotes;
+    if ($seededGroups !== []) {
+        $bits[] = 'settings seed (' . implode(', ', $seededGroups) . ')';
+    }
+    echo '[' . date('c') . '] Database upgrade: ' . implode(', ', $bits) . PHP_EOL;
+}

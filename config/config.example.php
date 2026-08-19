@@ -78,4 +78,10 @@ return [
         'last_run_at' => 0,
         'backup_dir' => '',
     ],
+
+    'telegram' => [
+        'bot_token' => '',
+        'chat_id' => '',
+        'send_auto_backup' => false,
+    ],
 ];

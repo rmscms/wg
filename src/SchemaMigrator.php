@@ -16,7 +16,10 @@ final class SchemaMigrator
     ) {
     }
 
-    public function apply(): void
+    /**
+     * @return list<string> newly applied migration ids
+     */
+    public function apply(): array
     {
         $this->ensureMigrationsTable();
 
@@ -24,6 +27,7 @@ final class SchemaMigrator
         sort($files, SORT_STRING);
 
         $applied = $this->appliedIds();
+        $fresh = [];
 
         foreach ($files as $path) {
             $id = basename($path, '.sql');
@@ -48,7 +52,10 @@ final class SchemaMigrator
                 'INSERT INTO schema_migrations (id) VALUES (:id)'
             );
             $stmt->execute(['id' => $id]);
+            $fresh[] = $id;
         }
+
+        return $fresh;
     }
 
     /** @return array<string, true> */
@@ -113,18 +120,30 @@ final class SchemaMigrator
         return $statements;
     }
 
-    public static function run(PDO $db): void
+    /**
+     * @return list<string>
+     */
+    public static function run(PDO $db): array
     {
         $dir = dirname(__DIR__) . '/database/migrations';
 
         if (!is_dir($dir)) {
-            return;
+            return [];
         }
 
         try {
-            (new self($db, $dir))->apply();
+            return (new self($db, $dir))->apply();
         } catch (PDOException $e) {
             throw new RuntimeException('Database migration failed: ' . $e->getMessage(), 0, $e);
         }
+    }
+
+    public static function label(string $id): string
+    {
+        return match ($id) {
+            '002_add_sub_short' => 'ستون لینک کوتاه ساب (sub_short)',
+            '003_panel_settings' => 'جدول تنظیمات پنل',
+            default => $id,
+        };
     }
 }

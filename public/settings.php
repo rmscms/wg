@@ -20,7 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'save_app' => 'app',
         'save_admin' => 'admin',
         'save_api', 'regen_token' => 'api',
-        'save_backup', 'save_backup_path', 'run_backup', 'restore_backup', 'delete_backup' => 'backup',
+        'save_backup', 'save_backup_path', 'run_backup', 'restore_backup', 'delete_backup', 'send_latest_backup_telegram' => 'backup',
+        'save_telegram', 'telegram_test' => 'telegram',
         'truncate_logs', 'truncate_all' => 'db',
         default => '',
     };
@@ -144,6 +145,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'include_database' => $includeDb,
                     'retention_count' => max(1, min(100, (int) ($_POST['retention_count'] ?? 14))),
                 ],
+                'telegram' => [
+                    'send_auto_backup' => isset($_POST['send_auto_backup']),
+                ],
             ]);
             flash('success', 'تنظیمات بک‌آپ ذخیره شد.');
             $tabRedirect = 'backup';
@@ -207,6 +211,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             backupManager()->delete($filename);
             flash('success', 'بک‌آپ حذف شد.');
             $tabRedirect = 'backup';
+        }
+
+        elseif ($action === 'send_latest_backup_telegram') {
+            if (!WgPanel\TelegramBridge::isConfigured($config)) {
+                throw new RuntimeException('توکن ربات یا شناسه چت تلگرام تنظیم نشده است.');
+            }
+
+            $manager = backupManager();
+            $list = $manager->listBackups();
+
+            if ($list === []) {
+                throw new RuntimeException('بک‌آپی برای ارسال وجود ندارد.');
+            }
+
+            $latest = $list[0];
+            $path = $manager->resolveBackupPath((string) $latest['filename']);
+            $caption = $latest['filename'] . ' (' . WgPanel\BackupManager::formatBytes((int) $latest['size']) . ')';
+            (new WgPanel\TelegramBridge($config))->sendBackup($path, $caption);
+            flash('success', 'آخرین بک‌آپ به تلگرام ارسال شد.');
+            $tabRedirect = 'backup';
+        }
+
+        /* ── Telegram ── */
+        elseif ($action === 'save_telegram') {
+            $token = trim((string) ($_POST['bot_token'] ?? ''));
+            $chatId = trim((string) ($_POST['chat_id'] ?? ''));
+            $changes = ['chat_id' => $chatId];
+
+            if ($token !== '') {
+                $changes['bot_token'] = $token;
+            }
+
+            savePanelSettings(['telegram' => $changes]);
+            flash('success', 'تنظیمات تلگرام ذخیره شد.');
+            $tabRedirect = 'telegram';
+        }
+
+        elseif ($action === 'telegram_test') {
+            (new WgPanel\TelegramBridge($config))->sendTest();
+            flash('success', 'پیام تست به تلگرام ارسال شد.');
+            $tabRedirect = 'telegram';
         }
 
         /* ── Database truncate ── */
@@ -275,6 +320,7 @@ $app = $cfg['app']        ?? [];
 $api = $cfg['api']        ?? [];
 $adm = $cfg['admin']      ?? [];
 $backup = $cfg['backup']  ?? [];
+$telegram = $cfg['telegram'] ?? [];
 $adminLoginPath = WgPanel\AdminPath::url($cfg);
 $backupManager = backupManager();
 $backupList = $backupManager->listBackups();
@@ -302,6 +348,12 @@ require __DIR__ . '/includes/header.php';
     <div>
         <h1>تنظیمات</h1>
         <p class="muted">مدیریت تنظیمات پنل و WireGuard</p>
+        <?php
+        $appliedMigrations = $db->query('SELECT id FROM schema_migrations ORDER BY id')->fetchAll(PDO::FETCH_COLUMN);
+        if (is_array($appliedMigrations) && $appliedMigrations !== []):
+        ?>
+        <p class="muted">مایگریشن اعمال‌شده: <?= e(implode('، ', array_map('strval', $appliedMigrations))) ?></p>
+        <?php endif; ?>
     </div>
     <div class="actions">
         <a href="/" class="btn btn-secondary">بازگشت</a>
@@ -311,6 +363,7 @@ require __DIR__ . '/includes/header.php';
 <!-- ── Tab nav ── -->
 <div class="settings-tabs">
     <button class="stab active" onclick="showTab('backup')">💾 بک‌آپ</button>
+    <button class="stab" onclick="showTab('telegram')">📲 تلگرام</button>
     <button class="stab" onclick="showTab('wg')">🔒 WireGuard</button>
     <button class="stab" onclick="showTab('app')">⚙️ پنل</button>
     <button class="stab" onclick="showTab('admin')">👤 مدیر</button>
@@ -365,6 +418,14 @@ require __DIR__ . '/includes/header.php';
 
             <div class="settings-actions">
                 <button type="submit" class="btn btn-primary" <?= $backupDirWritable ? '' : 'disabled' ?>>📦 بک‌آپ الآن</button>
+            </div>
+        </form>
+
+        <form method="post" class="settings-form">
+            <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>">
+            <input type="hidden" name="action" value="send_latest_backup_telegram">
+            <div class="settings-actions">
+                <button type="submit" class="btn btn-secondary" <?= $backupList === [] ? 'disabled' : '' ?>>📲 ارسال آخرین بک‌آپ به تلگرام</button>
             </div>
         </form>
 
@@ -453,6 +514,14 @@ require __DIR__ . '/includes/header.php';
                 <span class="settings-hint">بک‌آپ‌های قدیمی‌تر از این تعداد حذف می‌شوند.</span>
             </div>
 
+            <div class="settings-row settings-toggle-row">
+                <label>
+                    <input type="checkbox" name="send_auto_backup" value="1" <?= !empty($telegram['send_auto_backup']) ? 'checked' : '' ?>>
+                    ارسال به تلگرام
+                </label>
+                <span class="settings-hint">بعد از بک‌آپ موفق، اگر توکن و chat_id در تب تلگرام کامل باشد.</span>
+            </div>
+
             <?php if (!empty($backup['last_run_at'])): ?>
             <div class="settings-row">
                 <label>آخرین بک‌آپ خودکار</label>
@@ -463,6 +532,42 @@ require __DIR__ . '/includes/header.php';
             <div class="settings-actions">
                 <button type="submit" class="btn btn-secondary">ذخیره تنظیمات خودکار</button>
             </div>
+        </form>
+    </div>
+</div>
+
+<!-- ═══ Telegram ═══ -->
+<div id="tab-telegram" class="stab-panel" hidden>
+    <div class="card settings-card">
+        <h2>تلگرام</h2>
+        <p class="muted">یک ربات و یک chat_id کافی است (خصوصی، گروه یا کانال). ربات باید در آن چت عضو باشد. سقف فایل حدود ۵۰ مگابایت است.</p>
+
+        <form method="post" class="settings-form">
+            <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>">
+            <input type="hidden" name="action" value="save_telegram">
+
+            <div class="settings-row">
+                <label>توکن ربات</label>
+                <input type="password" name="bot_token" value="" placeholder="خالی = حفظ توکن فعلی" autocomplete="new-password" dir="ltr">
+                <span class="settings-hint">توکن فعلی: <code dir="ltr"><?= e(WgPanel\TelegramBridge::maskToken((string) ($telegram['bot_token'] ?? ''))) ?></code></span>
+            </div>
+            <div class="settings-row">
+                <label>شناسه چت (chat_id)</label>
+                <input type="text" name="chat_id" value="<?= e((string) ($telegram['chat_id'] ?? '')) ?>" placeholder="مثلاً 123456789 یا -100..." dir="ltr">
+            </div>
+
+            <div class="settings-actions">
+                <button type="submit" class="btn btn-primary">ذخیره تنظیمات تلگرام</button>
+            </div>
+        </form>
+
+        <div class="settings-sep"></div>
+
+        <form method="post" class="settings-form">
+            <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>">
+            <input type="hidden" name="action" value="telegram_test">
+            <p class="muted" style="margin-bottom:.75rem">ابتدا ذخیره کنید، سپس تست کنید. پیام «پنل WireGuard وصل شد» ارسال می‌شود.</p>
+            <button type="submit" class="btn btn-secondary" <?= WgPanel\TelegramBridge::isConfigured($cfg) ? '' : 'disabled' ?>>🧪 ارسال پیام تست</button>
         </form>
     </div>
 </div>

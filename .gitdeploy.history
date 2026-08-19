@@ -1,0 +1,34 @@
+[
+  {
+    "Id": 1,
+    "Title": "Deploy main to production",
+    "Date": "2026-08-19T15:10:18.4743726+03:30",
+    "FilesCount": 21,
+    "Branch": "main",
+    "Status": "Success",
+    "Files": [
+      ".cursor/rules/do-not-break.mdc",
+      "config/config.example.php",
+      "database/migrations/002_add_sub_short.sql",
+      "database/migrations/003_panel_settings.sql",
+      "database/schema.sql",
+      "docs/overview.md",
+      "install.sh",
+      "public/assets/style.css",
+      "public/backup-download.php",
+      "public/bootstrap.php",
+      "public/settings.php",
+      "scripts/backup.php",
+      "scripts/cli-bootstrap.php",
+      "scripts/fix-permissions.sh",
+      "scripts/migrate.php",
+      "scripts/read-wg-conf.sh",
+      "scripts/restore-wg-conf.sh",
+      "src/BackupManager.php",
+      "src/Database.php",
+      "src/SchemaMigrator.php",
+      "src/SettingsStore.php"
+    ],
+    "CommitHash": "f8a4ab37d8f4b00f2fa271237cbb0fc9d2acab7c"
+  }
+]
