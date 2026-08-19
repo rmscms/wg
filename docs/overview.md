@@ -123,7 +123,7 @@ wg-panel/
 
 - 💚 `health` — سلامت سرویس
 - 🔐 `auth` — login / logout / me
-- 👥 `accounts` — CRUD، toggle، ریست، QR، کانفیگ، آنلاین
+- 👥 `accounts` — CRUD، toggle، ریست، QR، کانفیگ، آنلاین (لیست بدون صفحه همه اکانت‌ها را می‌دهد)
 - 📈 `traffic` — سینک ترافیک
 - ⛔ `limits` — اعمال سقف حجم و انقضا
 - 🖥️ `server` — اطلاعات سرور WG

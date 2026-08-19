@@ -14,6 +14,11 @@ final class WireGuardManager
 
     private ?bool $latestHandshakesOk = null;
 
+    private ?string $serverPublicKeyCache = null;
+
+    /** @var array<string, array{rx_bytes: int, tx_bytes: int, total_bytes: int}>|null */
+    private ?array $wgTransferMapCache = null;
+
     public function __construct(
         private readonly PDO $db,
         private readonly array $config,
@@ -614,10 +619,9 @@ final class WireGuardManager
 
     public function syncTrafficData(bool $verbose = false): void
     {
-        $interface = $this->wgInterface();
-        $result = Shell::run("{$this->wgBinary()} show {$interface} transfer", false, true);
+        $transfers = $this->getWgTransferMap();
 
-        if ($result['exit_code'] !== 0 || trim($result['output']) === '') {
+        if ($transfers === []) {
             if ($verbose) {
                 echo "No WireGuard transfer data.\n";
             }
@@ -628,7 +632,10 @@ final class WireGuardManager
         $this->activateExpiryFromFirstConnection($handshakes);
         $handshakeTimeout = (int) ($this->config['wireguard']['handshake_timeout'] ?? 180);
 
-        $accountStmt = $this->db->prepare('SELECT * FROM accounts WHERE public_key = :public_key');
+        $accountsByKey = [];
+        foreach ($this->listAccounts() as $row) {
+            $accountsByKey[trim((string) $row['public_key'])] = $row;
+        }
 
         // For limited users: update volume counter + baseline
         $updateStmt = $this->db->prepare(
@@ -656,31 +663,12 @@ final class WireGuardManager
              VALUES (:account_id, :rx, :tx)'
         );
 
-        foreach (explode("\n", trim($result['output'])) as $line) {
-            if ($line === '') {
-                continue;
-            }
+        foreach ($transfers as $publicKey => $stats) {
+            $currentRx = $stats['rx_bytes'];
+            $currentTx = $stats['tx_bytes'];
+            $account = $accountsByKey[$publicKey] ?? null;
 
-            $parts = preg_split('/\s+/', trim($line));
-
-            if ($parts === false || count($parts) < 3) {
-                continue;
-            }
-
-            [$publicKey, $rx, $tx] = $parts;
-
-            if (!$this->isValidWireGuardPublicKey($publicKey)) {
-                continue;
-            }
-
-            $currentRx = (int) $rx;
-            $currentTx = (int) $tx;
-
-            $accountStmt->execute(['public_key' => $publicKey]);
-            $account = $accountStmt->fetch();
-            $accountStmt->closeCursor();
-
-            if ($account === false) {
+            if ($account === null) {
                 if ($verbose) {
                     echo "Skipped orphan peer (runtime cleanup handled by limits/sync): {$publicKey}\n";
                 }
@@ -1197,17 +1185,13 @@ final class WireGuardManager
         return true;
     }
 
-    public function getAllOnlineStatuses(): array
+    /**
+     * @param list<array<string, mixed>>|null $accounts
+     * @return array<string, mixed>
+     */
+    public function getAllOnlineStatuses(?array $accounts = null): array
     {
-        $handshakes = $this->getLatestHandshakes();
-        $accounts = $this->listAccounts();
-        $result = [];
-
-        foreach ($accounts as $account) {
-            $result[(string) $account['id']] = $this->buildOnlineStatus($account, $handshakes);
-        }
-
-        return $result;
+        return $this->getOnlineStatusesForAccounts($accounts ?? $this->listAccounts());
     }
 
     /**
@@ -1244,14 +1228,17 @@ final class WireGuardManager
         return $result;
     }
 
-    /** @param list<array<string, mixed>> $accounts */
+    /**
+     * @param list<array<string, mixed>> $accounts
+     * @return array<string, mixed>
+     */
     public function getOnlineStatusesForAccounts(array $accounts): array
     {
         $handshakes = $this->getLatestHandshakes();
         $result = [];
 
         foreach ($accounts as $account) {
-            $result[(int) $account['id']] = $this->buildOnlineStatus($account, $handshakes);
+            $result[(string) $account['id']] = $this->buildOnlineStatus($account, $handshakes);
         }
 
         return $result;
@@ -1651,10 +1638,16 @@ final class WireGuardManager
 
     public function getServerPublicKey(): string
     {
+        if ($this->serverPublicKeyCache !== null) {
+            return $this->serverPublicKeyCache;
+        }
+
         // Try static key from config first
         $static = trim((string) ($this->config['wireguard']['server_public_key'] ?? ''));
         if ($static !== '' && $static !== '(none)') {
-            return $static;
+            $this->serverPublicKeyCache = $static;
+
+            return $this->serverPublicKeyCache;
         }
 
         $interface = $this->wgInterface();
@@ -1668,7 +1661,9 @@ final class WireGuardManager
             );
         }
 
-        return $key;
+        $this->serverPublicKeyCache = $key;
+
+        return $this->serverPublicKeyCache;
     }
 
     private function normalizeExpiry(?string $expiresAt): ?string
@@ -1872,11 +1867,35 @@ final class WireGuardManager
     public function getPeerTransferStats(array $account): ?array
     {
         $publicKey = trim((string) $account['public_key']);
+        $stats = $this->getWgTransferMap()[$publicKey] ?? null;
+
+        if ($stats === null) {
+            return null;
+        }
+
+        return [
+            'public_key' => $publicKey,
+            'rx_bytes' => $stats['rx_bytes'],
+            'tx_bytes' => $stats['tx_bytes'],
+            'total_bytes' => $stats['total_bytes'],
+        ];
+    }
+
+    /**
+     * @return array<string, array{rx_bytes: int, tx_bytes: int, total_bytes: int}>
+     */
+    private function getWgTransferMap(): array
+    {
+        if ($this->wgTransferMapCache !== null) {
+            return $this->wgTransferMapCache;
+        }
+
+        $this->wgTransferMapCache = [];
         $interface = $this->wgInterface();
         $result = Shell::run("{$this->wgBinary()} show {$interface} transfer", false, true);
 
         if ($result['exit_code'] !== 0 || trim($result['output']) === '') {
-            return null;
+            return $this->wgTransferMapCache;
         }
 
         foreach (explode("\n", trim($result['output'])) as $line) {
@@ -1891,23 +1910,23 @@ final class WireGuardManager
             }
 
             [$key, $rx, $tx] = $parts;
+            $publicKey = trim((string) $key);
 
-            if (trim((string) $key) !== $publicKey) {
+            if (!$this->isValidWireGuardPublicKey($publicKey)) {
                 continue;
             }
 
             $rxBytes = (int) $rx;
             $txBytes = (int) $tx;
 
-            return [
-                'public_key' => $publicKey,
+            $this->wgTransferMapCache[$publicKey] = [
                 'rx_bytes' => $rxBytes,
                 'tx_bytes' => $txBytes,
                 'total_bytes' => $rxBytes + $txBytes,
             ];
         }
 
-        return null;
+        return $this->wgTransferMapCache;
     }
 
     /** @return array{synced: bool, log_lines: list<string>, updated_at: string} */

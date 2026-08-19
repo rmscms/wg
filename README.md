@@ -264,7 +264,7 @@ curl -H "Authorization: Bearer TOKEN" \
 | Method | Path | کار |
 |--------|------|-----|
 | GET | `/api/v1/health` | سلامت سرویس |
-| GET | `/api/v1/accounts` | لیست اکانت‌ها (با `?page=&per_page=&q=` صفحه‌بندی؛ `per_page` توسط کلاینت تعیین می‌شود) |
+| GET | `/api/v1/accounts` | لیست همه اکانت‌ها (`page`/`per_page`/`q` اختیاری است) |
 | POST | `/api/v1/accounts` | ایجاد اکانت |
 | GET/PATCH/DELETE | `/api/v1/accounts/{id}` | جزئیات / ویرایش / حذف |
 | POST | `/api/v1/accounts/{id}/toggle` | فعال/غیرفعال |
@@ -273,9 +273,7 @@ curl -H "Authorization: Bearer TOKEN" \
 | POST | `/api/v1/accounts/{id}/reset-both` | ریست حجم + تاریخ |
 | POST | `/api/v1/accounts/{id}/regenerate-subscribe-token` | توکن subscribe جدید |
 | GET | `/api/v1/accounts/{id}/config` | دانلود `.conf` |
-| GET | `/api/v1/accounts/{id}/wireguard-uri` | لینک `wireguard://` |
-| GET | `/api/v1/accounts/{id}/subscription-feed` | بدنه subscription (base64) |
-| GET | `/api/v1/accounts/{id}/qr?type=config\|wireguard\|subscribe` | QR (PNG یا `format=json`) |
+| GET | `/api/v1/accounts/{id}/qr` | QR کانفیگ (PNG یا `format=json`) |
 | GET | `/api/v1/accounts/{id}/traffic-logs` | تاریخچه مصرف |
 | GET | `/api/v1/accounts/{id}/transfer` | آمار خام `wg transfer` |
 | GET | `/api/v1/accounts/online-status` | وضعیت آنلاین همه (+ `wg_ok`) |
@@ -289,8 +287,7 @@ curl -H "Authorization: Bearer TOKEN" \
 | POST | `/api/v1/system/sync-wireguard` | همگام‌سازی DB ↔ wg0.conf ↔ WireGuard زنده |
 | GET | `/api/v1/server` | اطلاعات WireGuard سرور |
 | GET | `/api/v1/subscribe/{token}` | داده subscribe (عمومی) |
-| GET | `/api/v1/subscribe/{token}/links` | لینک‌ها + `wireguard://` |
-| GET | `/api/v1/subscribe/{token}/feed` | بدنه feed (base64) |
+| GET | `/api/v1/subscribe/{token}/status` | وضعیت زنده subscribe |
 
 ### مثال
 

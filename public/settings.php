@@ -227,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $latest = $list[0];
             $path = $manager->resolveBackupPath((string) $latest['filename']);
-            $caption = $latest['filename'] . ' (' . WgPanel\BackupManager::formatBytes((int) $latest['size']) . ')';
+            $caption = WgPanel\BackupManager::telegramCaption($config, (string) $latest['filename'], (int) $latest['size']);
             (new WgPanel\TelegramBridge($config))->sendBackup($path, $caption);
             flash('success', 'آخرین بک‌آپ به تلگرام ارسال شد.');
             $tabRedirect = 'backup';

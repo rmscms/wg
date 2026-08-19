@@ -8,7 +8,7 @@ use RuntimeException;
 
 final class BackupManager
 {
-    private const FILENAME_PATTERN = '/^backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.tar\.gz$/';
+    private const FILENAME_PATTERN = '/^backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}(?:_[a-zA-Z0-9][a-zA-Z0-9.-]{0,62})?\.tar\.gz$/';
 
     private string $backupDir;
 
@@ -71,7 +71,12 @@ final class BackupManager
         $this->ensureBackupDir();
 
         $timestamp = time();
-        $filename = 'backup_' . date('Y-m-d_H-i-s', $timestamp) . '.tar.gz';
+        $host = self::filenameHost($config);
+        $filename = 'backup_' . date('Y-m-d_H-i-s', $timestamp);
+        if ($host !== '') {
+            $filename .= '_' . $host;
+        }
+        $filename .= '.tar.gz';
         $archivePath = $this->backupDir . '/' . $filename;
         $stagingDir = $this->backupDir . '/.tmp_' . bin2hex(random_bytes(4));
 
@@ -96,6 +101,7 @@ final class BackupManager
                 $stagingDir . '/manifest.json',
                 json_encode([
                     'created_at' => date('c', $timestamp),
+                    'host' => self::panelHost($config),
                     'items' => $items,
                 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
             );
@@ -172,8 +178,6 @@ final class BackupManager
         }
 
         $files = glob($this->backupDir . '/backup_*.tar.gz') ?: [];
-        rsort($files, SORT_STRING);
-
         $backups = [];
 
         foreach ($files as $path) {
@@ -189,6 +193,12 @@ final class BackupManager
                 'created_at' => (int) filemtime($path),
             ];
         }
+
+        usort($backups, static function (array $a, array $b): int {
+            $cmp = $b['created_at'] <=> $a['created_at'];
+
+            return $cmp !== 0 ? $cmp : strcmp($b['filename'], $a['filename']);
+        });
 
         return $backups;
     }
@@ -263,6 +273,60 @@ final class BackupManager
     public static function isValidFilename(string $filename): bool
     {
         return preg_match(self::FILENAME_PATTERN, $filename) === 1;
+    }
+
+    public static function panelHost(array $config): string
+    {
+        $base = trim((string) ($config['app']['subscribe_base_url'] ?? ''));
+
+        if ($base !== '') {
+            $host = parse_url($base, PHP_URL_HOST);
+
+            if (is_string($host) && $host !== '') {
+                return $host;
+            }
+        }
+
+        $endpoint = trim((string) ($config['wireguard']['endpoint'] ?? ''));
+
+        if ($endpoint === '') {
+            return '';
+        }
+
+        if (str_starts_with($endpoint, '[')) {
+            $end = strpos($endpoint, ']');
+
+            return $end === false ? '' : substr($endpoint, 1, $end - 1);
+        }
+
+        $colon = strrpos($endpoint, ':');
+
+        if ($colon === false) {
+            return $endpoint;
+        }
+
+        return substr($endpoint, 0, $colon);
+    }
+
+    public static function filenameHost(array $config): string
+    {
+        $host = strtolower(self::panelHost($config));
+        $host = preg_replace('/[^a-z0-9.-]+/', '-', $host) ?? '';
+        $host = trim($host, '.-');
+
+        if (strlen($host) > 63) {
+            $host = rtrim(substr($host, 0, 63), '.-');
+        }
+
+        return $host;
+    }
+
+    public static function telegramCaption(array $config, string $filename, int $size): string
+    {
+        $host = self::panelHost($config);
+        $title = $host !== '' ? ('بک‌آپ ' . $host) : 'بک‌آپ پنل WireGuard';
+
+        return $title . "\n" . $filename . "\n" . self::formatBytes($size);
     }
 
     public static function formatBytes(int $bytes): string

@@ -185,18 +185,12 @@ final class Router
 
         if ($action === '') {
             if ($method === 'GET') {
-                $account = $wgManager->getAccount($id);
-                if ($account === null) {
-                    Http::error('Account not found.', 404);
-                }
+                $account = self::requireAccount($wgManager, $id);
                 Http::ok(AccountResource::detail($account, $wgManager));
             }
 
             if ($method === 'PATCH' || $method === 'PUT') {
-                $account = $wgManager->getAccount($id);
-                if ($account === null) {
-                    Http::error('Account not found.', 404);
-                }
+                self::requireAccount($wgManager, $id);
                 $body    = Http::readJsonBody();
                 $data    = AccountResource::parseInput($body, false);
                 $updated = $wgManager->updateAccount($id, $data);
@@ -212,10 +206,7 @@ final class Router
         }
 
         if ($action === 'toggle' && $method === 'POST') {
-            $account = $wgManager->getAccount($id);
-            if ($account === null) {
-                Http::error('Account not found.', 404);
-            }
+            $account = self::requireAccount($wgManager, $id);
             $updated = $wgManager->updateAccount($id, [
                 'is_active' => (int) $account['is_active'] === 1 ? 0 : 1,
             ]);
@@ -243,10 +234,7 @@ final class Router
         }
 
         if ($action === 'config' && $method === 'GET') {
-            $account = $wgManager->getAccount($id);
-            if ($account === null) {
-                Http::error('Account not found.', 404);
-            }
+            $account = self::requireAccount($wgManager, $id);
             header('Content-Type: text/plain; charset=utf-8');
             header('Content-Disposition: attachment; filename="' . preg_replace('/[^a-zA-Z0-9._-]+/', '-', (string) $account['name']) . '.conf"');
             echo $wgManager->buildClientConfig($account);
@@ -258,10 +246,7 @@ final class Router
         }
 
         if ($action === 'online-status' && $method === 'GET') {
-            $account = $wgManager->getAccount($id);
-            if ($account === null) {
-                Http::error('Account not found.', 404);
-            }
+            $account = self::requireAccount($wgManager, $id);
             Http::ok($wgManager->getAccountOnlineStatus($account), 200, [
                 'updated_at'     => date('c'),
                 'account_id'     => $id,
@@ -271,10 +256,7 @@ final class Router
         }
 
         if ($action === 'traffic-logs' && $method === 'GET') {
-            $account = $wgManager->getAccount($id);
-            if ($account === null) {
-                Http::error('Account not found.', 404);
-            }
+            self::requireAccount($wgManager, $id);
 
             $page    = max(1, (int) ($_GET['page'] ?? 1));
             $perPage = max(5, min(200, (int) ($_GET['per_page'] ?? 50)));
@@ -290,10 +272,7 @@ final class Router
         }
 
         if ($action === 'transfer' && $method === 'GET') {
-            $account = $wgManager->getAccount($id);
-            if ($account === null) {
-                Http::error('Account not found.', 404);
-            }
+            $account = self::requireAccount($wgManager, $id);
 
             $stats = $wgManager->getPeerTransferStats($account);
             Http::ok([
@@ -332,7 +311,7 @@ final class Router
             $online   = $wgManager->getOnlineStatusesForAccounts($accounts);
         } else {
             $accounts = $wgManager->listAccounts();
-            $online   = $wgManager->getAllOnlineStatuses();
+            $online   = $wgManager->getOnlineStatusesForAccounts($accounts);
             $total    = count($accounts);
             $page     = 1;
             $perPage  = $total > 0 ? $total : 20;
@@ -362,17 +341,24 @@ final class Router
         Http::ok($items, 200, $meta);
     }
 
-    private static function sendAccountQr(int $id, WireGuardManager $wgManager): never
+    /** @return array<string, mixed> */
+    private static function requireAccount(WireGuardManager $wgManager, int $id): array
     {
         $account = $wgManager->getAccount($id);
         if ($account === null) {
             Http::error('Account not found.', 404);
         }
 
+        return $account;
+    }
+
+    private static function sendAccountQr(int $id, WireGuardManager $wgManager): never
+    {
+        $account = self::requireAccount($wgManager, $id);
         $format = strtolower(trim((string) ($_GET['format'] ?? 'png')));
 
         try {
-            $png = QrGenerator::png($wgManager->buildClientConfig($account));
+            $png = QrGenerator::pngForAccount($wgManager, $account);
         } catch (\Throwable $e) {
             Http::error('QR generation failed: ' . $e->getMessage(), 500, 'qr_generation_failed');
         }

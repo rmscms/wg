@@ -42,7 +42,7 @@ if (!WgPanel\TelegramBridge::isConfigured($config)) {
 
 try {
     $path = $backupManager->directory() . '/' . $result['filename'];
-    $caption = $result['filename'] . ' (' . WgPanel\BackupManager::formatBytes((int) $result['size']) . ')';
+    $caption = WgPanel\BackupManager::telegramCaption($config, $result['filename'], (int) $result['size']);
     (new WgPanel\TelegramBridge($config))->sendBackup($path, $caption);
     echo '[' . date('c') . '] Backup sent to Telegram' . PHP_EOL;
 } catch (Throwable $e) {

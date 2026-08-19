@@ -14,8 +14,7 @@ if ($account === null) {
 }
 
 try {
-    $config = $wgManager->buildClientConfig($account);
-    $png = WgPanel\QrGenerator::png($config);
+    $png = WgPanel\QrGenerator::pngForAccount($wgManager, $account);
 } catch (Throwable $e) {
     http_response_code(500);
     exit('QR generation failed: ' . $e->getMessage());

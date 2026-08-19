@@ -82,19 +82,7 @@ components:
       properties:
         token:
           type: string
-        feed_url:
-          type: string
-          description: Android subscription URL (plain wireguard:// URI)
-        ios_url:
-          type: string
-          description: iOS/Streisand subscription URL (rawconf format)
         panel_url:
-          type: string
-        wireguard_uri:
-          type: string
-        node_label:
-          type: string
-        userinfo:
           type: string
 
     Account:
@@ -204,43 +192,6 @@ components:
         recorded_at:
           type: string
 
-    SubscriptionFeedPayload:
-      type: object
-      properties:
-        wireguard_uri:
-          type: string
-          description: wireguard:// URI (standard base64 URL-encoded keys) for Android clients
-        feed_url:
-          type: string
-          description: Android subscription URL — plain wireguard:// URI format
-        ios_url:
-          type: string
-          description: iOS subscription URL — rawconf (.conf file) format for Streisand
-        panel_url:
-          type: string
-        node_label:
-          type: string
-        userinfo:
-          type: string
-        profile_title:
-          type: string
-        profile_web_page_url:
-          type: string
-        profile_update_interval_hours:
-          type: integer
-        feed_body:
-          type: string
-          description: Plain text body (wireguard:// URI + metadata comments)
-        feed_body_base64:
-          type: string
-          description: Base64-encoded version of feed_body
-        conf_body:
-          type: string
-          description: Standard WireGuard .conf (INI) file content — for iOS/Streisand
-        conf_body_base64:
-          type: string
-          description: Base64-encoded version of conf_body
-
 paths:
   /health:
     get:
@@ -295,10 +246,10 @@ paths:
   /accounts:
     get:
       tags: [Accounts]
-      summary: List accounts (all or paginated)
+      summary: List accounts
       description: |
-        Without query params returns all accounts.
-        With `page`, `per_page`, or `q` returns a paginated slice.
+        Without query params returns all accounts (the usual client path).
+        `page`, `per_page`, and `q` still work if sent; they are optional.
       security:
         - bearerAuth: []
         - sessionCookie: []
@@ -510,52 +461,10 @@ paths:
               schema:
                 type: string
 
-  /accounts/{id}/wireguard-uri:
-    get:
-      tags: [Accounts]
-      summary: wireguard:// URI and subscription metadata
-      security:
-        - bearerAuth: []
-        - sessionCookie: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Subscription feed payload
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SubscriptionFeedPayload'
-
-  /accounts/{id}/subscription-feed:
-    get:
-      tags: [Accounts]
-      summary: Subscription feed body (base64) for admin
-      security:
-        - bearerAuth: []
-        - sessionCookie: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Feed payload
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SubscriptionFeedPayload'
-
   /accounts/{id}/qr:
     get:
       tags: [Accounts]
-      summary: QR code image for config, wireguard URI, or subscribe URL
+      summary: QR code image for WireGuard config
       security:
         - bearerAuth: []
         - sessionCookie: []
@@ -565,13 +474,6 @@ paths:
           required: true
           schema:
             type: integer
-        - name: type
-          in: query
-          schema:
-            type: string
-            enum: [config, wireguard, subscribe, subscribe-ios]
-            default: config
-          description: config=WireGuard .conf QR, wireguard=wireguard:// URI QR, subscribe=Android sub URL QR, subscribe-ios=iOS sub URL QR
         - name: format
           in: query
           schema:
@@ -771,35 +673,3 @@ paths:
       responses:
         '200':
           description: Status JSON
-
-  /subscribe/{token}/links:
-    get:
-      tags: [Subscribe]
-      summary: Subscription URLs, wireguard URI, and feed metadata
-      parameters:
-        - name: token
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Links
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SubscriptionFeedPayload'
-
-  /subscribe/{token}/feed:
-    get:
-      tags: [Subscribe]
-      summary: Subscription feed body (base64) for clients
-      parameters:
-        - name: token
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Base64 feed body and headers metadata

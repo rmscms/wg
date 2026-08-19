@@ -40,4 +40,10 @@ final class QrGenerator
 
         throw new RuntimeException('Failed to generate QR code.');
     }
+
+    /** @param array<string, mixed> $account */
+    public static function pngForAccount(WireGuardManager $wgManager, array $account): string
+    {
+        return self::png($wgManager->buildClientConfig($account));
+    }
 }
