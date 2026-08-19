@@ -1,5 +1,29 @@
 [
   {
+    "Id": 2,
+    "Title": "Deploy main to production",
+    "Date": "2026-08-19T15:34:31.6284625+03:30",
+    "FilesCount": 13,
+    "Branch": "main",
+    "Status": "Success",
+    "Files": [
+      "composer.json",
+      "config/config.example.php",
+      "docs/overview.md",
+      "public/bootstrap.php",
+      "public/settings.php",
+      "scripts/backup.php",
+      "scripts/cli-bootstrap.php",
+      "scripts/read-wg-conf.sh",
+      "scripts/restore-wg-conf.sh",
+      "src/Database.php",
+      "src/SchemaMigrator.php",
+      "src/SettingsStore.php",
+      "src/TelegramBridge.php"
+    ],
+    "CommitHash": "269332b53006ed4dda4de03986698acccdfb612a"
+  },
+  {
     "Id": 1,
     "Title": "Deploy main to production",
     "Date": "2026-08-19T15:10:18.4743726+03:30",
@@ -32,27 +56,26 @@
     "CommitHash": "f8a4ab37d8f4b00f2fa271237cbb0fc9d2acab7c"
   },
   {
-    "Id": 2,
+    "Id": 3,
     "Title": "Deploy main to production",
-    "Date": "2026-08-19T15:34:31.6284625+03:30",
-    "FilesCount": 13,
+    "Date": "2026-08-19T16:06:22.0277589+03:30",
+    "FilesCount": 12,
     "Branch": "main",
     "Status": "Success",
     "Files": [
-      "composer.json",
-      "config/config.example.php",
+      "README.md",
       "docs/overview.md",
-      "public/bootstrap.php",
+      "public/api/openapi.yaml",
+      "public/qr.php",
       "public/settings.php",
       "scripts/backup.php",
-      "scripts/cli-bootstrap.php",
       "scripts/read-wg-conf.sh",
       "scripts/restore-wg-conf.sh",
-      "src/Database.php",
-      "src/SchemaMigrator.php",
-      "src/SettingsStore.php",
-      "src/TelegramBridge.php"
+      "src/Api/Router.php",
+      "src/BackupManager.php",
+      "src/QrGenerator.php",
+      "src/WireGuardManager.php"
     ],
-    "CommitHash": "269332b53006ed4dda4de03986698acccdfb612a"
+    "CommitHash": "d662978185d4c0aa93299455ea602429f6eb60b8"
   }
 ]

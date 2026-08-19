@@ -15,6 +15,8 @@ return [
         'enabled' => true,
         // Bearer token for REST API (Authorization: Bearer ...)
         'token' => 'CHANGE_ME_GENERATE_RANDOM_HEX',
+        // Empty = all IPs allowed for Bearer requests
+        'allowed_ips' => [],
         // Pagination for GET /api/v1/accounts (client sets ?per_page=...)
         'pagination' => [
             'default_per_page' => 20,

@@ -117,6 +117,8 @@ wg-panel/
 
 توکن در `config/config.php` → `api.token`
 
+لیست `api.allowed_ips` خالی = بدون محدودیت IP برای Bearer.
+
 مستندات زنده: `/api/docs`
 
 ### گروه‌ها

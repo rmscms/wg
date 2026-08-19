@@ -1,0 +1,94 @@
+.ip-tags-wrapper .ip-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .4rem;
+    min-height: 2.7rem;
+    width: 100%;
+    padding: .4rem .55rem;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 10px;
+    cursor: text;
+    direction: ltr;
+    transition: border-color .18s, background .18s;
+}
+
+.ip-tags-wrapper .ip-tags-container:focus-within {
+    outline: none;
+    border-color: rgba(59,130,246,.5);
+    background: rgba(59,130,246,.06);
+}
+
+.ip-tags-wrapper .ip-tags-chips {
+    display: contents;
+}
+
+.settings-row .ip-tags-container input.ip-tags-input,
+.settings-row .ip-tags-container input.ip-tags-input[type="text"],
+.settings-row .ip-tags-container input.ip-tags-input[dir="ltr"],
+.settings-row .ip-tags-container input.ip-tags-input:focus,
+.settings-row .ip-tags-container input.ip-tags-input[type="text"]:focus {
+    width: auto;
+    max-width: 100%;
+    flex: 1 1 9rem;
+    min-width: 9rem;
+    min-height: 1.7rem;
+    padding: .1rem .2rem;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    outline: none;
+    color: var(--text);
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: .86rem;
+    direction: ltr;
+}
+
+.ip-tags-wrapper .ip-tags-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .28rem .55rem;
+    border-radius: 999px;
+    font-size: .8rem;
+    font-weight: 600;
+    font-family: ui-monospace, Consolas, monospace;
+    background: rgba(59,130,246,.22);
+    color: #93c5fd;
+    line-height: 1.2;
+}
+
+.ip-tags-wrapper .ip-tags-chip.is-invalid {
+    background: rgba(239,68,68,.2);
+    color: #fca5a5;
+}
+
+.ip-tags-wrapper .ip-tags-chip button {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.05rem;
+    height: 1.05rem;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255,255,255,.12);
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    font-size: .8rem;
+}
+
+.ip-tags-wrapper .ip-tags-chip button:hover {
+    background: rgba(239,68,68,.35);
+    color: #fecaca;
+}
+
+.ip-tags-wrapper .ip-tags-msg {
+    font-size: .73rem;
+    color: #fca5a5;
+}

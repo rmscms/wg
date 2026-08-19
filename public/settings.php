@@ -110,7 +110,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         /* ── API settings ── */
         elseif ($action === 'save_api') {
             $enabled = isset($_POST['api_enabled']);
-            savePanelSettings(['api' => ['enabled' => $enabled]]);
+            $allowedIps = WgPanel\ApiAllowedIp::parseRules($_POST['api_allowed_ips'] ?? '');
+            savePanelSettings(['api' => [
+                'enabled' => $enabled,
+                'allowed_ips' => $allowedIps,
+            ]]);
             flash('success', 'تنظیمات API ذخیره شد.');
             $tabRedirect = 'api';
         }
@@ -341,6 +345,8 @@ $accountCount = (int) $db->query('SELECT COUNT(*) FROM accounts')->fetchColumn()
 $timezones = ['Asia/Tehran', 'UTC', 'Europe/London', 'America/New_York', 'America/Los_Angeles', 'Asia/Dubai', 'Asia/Istanbul'];
 
 $pageTitle = 'تنظیمات';
+$pageStyles = ['/assets/ip-tags.css'];
+$apiAllowedIps = WgPanel\ApiAllowedIp::normalizeList($api['allowed_ips'] ?? []);
 require __DIR__ . '/includes/header.php';
 ?>
 
@@ -722,6 +728,17 @@ require __DIR__ . '/includes/header.php';
                 </div>
             </div>
 
+            <div class="settings-row ip-tags-wrapper" data-initial-ips="<?= e(json_encode($apiAllowedIps, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '[]') ?>">
+                <label for="api-allowed-ips-input">IPهای مجاز Bearer</label>
+                <div class="ip-tags-container">
+                    <div class="ip-tags-chips"></div>
+                    <input type="text" class="ip-tags-input" id="api-allowed-ips-input" placeholder="IP را بنویسید و Enter بزنید" autocomplete="off" dir="ltr">
+                </div>
+                <input type="hidden" name="api_allowed_ips" class="ip-tags-hidden" value="">
+                <span class="settings-hint">Enter بزنید تا تگ شود — کاما لازم نیست. خالی = همه مجاز</span>
+                <span class="ip-tags-msg" hidden></span>
+            </div>
+
             <div class="settings-actions">
                 <button type="submit" class="btn btn-primary">ذخیره تنظیمات API</button>
             </div>
@@ -845,4 +862,5 @@ function confirmTruncate(form, msg) {
 })();
 </script>
 
+<script src="/assets/ip-tags-input.js"></script>
 <?php require __DIR__ . '/includes/footer.php'; ?>

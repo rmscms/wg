@@ -21,7 +21,7 @@ final class SettingsStore
             'server_public_key',
         ],
         'admin' => ['username', 'password_hash', 'login_path'],
-        'api' => ['enabled', 'token'],
+        'api' => ['enabled', 'token', 'allowed_ips'],
         'backup' => [
             'enabled',
             'interval_hours',

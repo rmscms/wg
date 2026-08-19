@@ -8,7 +8,13 @@ final class ApiAuth
 {
     public static function requireAdmin(array $config): void
     {
-        if (self::isAuthenticated($config)) {
+        if (self::isBearerAuthenticated($config)) {
+            self::assertBearerIpAllowed($config);
+
+            return;
+        }
+
+        if (!empty($_SESSION['wg_admin'])) {
             return;
         }
 
@@ -21,6 +27,11 @@ final class ApiAuth
             return true;
         }
 
+        return self::isBearerAuthenticated($config);
+    }
+
+    public static function isBearerAuthenticated(array $config): bool
+    {
         $api = $config['api'] ?? [];
         if (empty($api['enabled'])) {
             return false;
@@ -37,6 +48,17 @@ final class ApiAuth
         }
 
         return hash_equals($configuredToken, $provided);
+    }
+
+    private static function assertBearerIpAllowed(array $config): void
+    {
+        $allowed = $config['api']['allowed_ips'] ?? [];
+
+        if (\WgPanel\ApiAllowedIp::allows($allowed, \WgPanel\ApiAllowedIp::clientIp())) {
+            return;
+        }
+
+        Http::error('IP address is not allowed for this API token.', 403, 'ip_not_allowed');
     }
 
     public static function extractBearerToken(): ?string

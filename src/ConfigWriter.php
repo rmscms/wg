@@ -71,7 +71,7 @@ final class ConfigWriter
     private function deepMerge(array $a, array $b): array
     {
         foreach ($b as $key => $value) {
-            if (isset($a[$key]) && is_array($a[$key]) && is_array($value)) {
+            if (isset($a[$key]) && is_array($a[$key]) && is_array($value) && !array_is_list($value)) {
                 $a[$key] = $this->deepMerge($a[$key], $value);
             } else {
                 $a[$key] = $value;
