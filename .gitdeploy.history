@@ -1,5 +1,22 @@
 [
   {
+    "Id": 7,
+    "Title": "Deploy main to production",
+    "Date": "2026-08-19T17:54:43.6940965+03:30",
+    "FilesCount": 6,
+    "Branch": "main",
+    "Status": "Success",
+    "Files": [
+      "public/assets/dashboard.js",
+      "public/assets/style.css",
+      "public/bootstrap.php",
+      "public/includes/dashboard-list-fragments.php",
+      "public/index.php",
+      "src/WireGuardManager.php"
+    ],
+    "CommitHash": "f00ba777ca7c34698bc6c0176d5782bf61719179"
+  },
+  {
     "Id": 6,
     "Title": "Deploy main to production",
     "Date": "2026-08-19T17:27:08.4550356+03:30",
@@ -142,20 +159,30 @@
     "CommitHash": "f8a4ab37d8f4b00f2fa271237cbb0fc9d2acab7c"
   },
   {
-    "Id": 7,
+    "Id": 8,
     "Title": "Deploy main to production",
-    "Date": "2026-08-19T17:54:43.6940965+03:30",
-    "FilesCount": 6,
+    "Date": "2026-08-19T18:03:36.3849061+03:30",
+    "FilesCount": 16,
     "Branch": "main",
     "Status": "Success",
     "Files": [
+      "docs/overview.md",
       "public/assets/dashboard.js",
+      "public/assets/jalali-datepicker.css",
+      "public/assets/jalali-datepicker.js",
       "public/assets/style.css",
       "public/bootstrap.php",
-      "public/includes/dashboard-list-fragments.php",
+      "public/create.php",
+      "public/includes/account-modal-ajax.php",
+      "public/includes/account-modal.php",
+      "public/includes/footer.php",
+      "public/includes/header.php",
       "public/index.php",
+      "public/settings.php",
+      "src/Helpers.php",
+      "src/Jalali.php",
       "src/WireGuardManager.php"
     ],
-    "CommitHash": "f00ba777ca7c34698bc6c0176d5782bf61719179"
+    "CommitHash": "574b781ebe3e39e07338084e9ef36ae487c85c44"
   }
 ]

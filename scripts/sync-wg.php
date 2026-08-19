@@ -107,9 +107,12 @@ try {
     if ($dryRun) {
         echo "Mode: dry-run (no changes)\n";
     }
+    @ob_implicit_flush(true);
+    @flush();
 
     $before = $wgManager->analyzeWireguardSync();
     printWireguardDiffReport('Diff before sync', $before);
+    @flush();
 
     if ($dryRun) {
         $elapsed = (hrtime(true) - $startedAt) / 1e9;
@@ -119,6 +122,8 @@ try {
     }
 
     echo "\n=== Syncing WireGuard ===\n";
+    echo "Applying live peers, then writing {$confPath} ...\n";
+    @flush();
     $result = $wgManager->syncWireguard(false);
 
     foreach ($result['added'] as $line) {
@@ -132,19 +137,46 @@ try {
     }
 
     if ($result['added'] === [] && $result['removed'] === [] && $result['errors'] === []) {
-        echo "  nothing to change\n";
+        echo "  runtime already in sync\n";
     }
 
     printWireguardDiffReport('Diff after sync', $result['after']);
 
+    $after = $result['after'];
+    $persistErrors = [];
+    foreach ($result['errors'] as $line) {
+        if (str_contains($line, 'persist wg0.conf')) {
+            $persistErrors[] = $line;
+        }
+    }
+    $missingInConf = $after['missing_in_conf'] ?? [];
+
+    echo "\n=== wg0.conf persist ===\n";
+    echo "Before: {$before['conf_peer_count']} peers\n";
+    echo "After:  {$after['conf_peer_count']} peers\n";
+
+    $confSaved = $persistErrors === [] && $missingInConf === [];
+    if ($persistErrors !== []) {
+        echo "NOT SAVED.\n";
+        foreach ($persistErrors as $line) {
+            echo "  {$line}\n";
+        }
+    } elseif ($missingInConf !== []) {
+        echo 'NOT SAVED: still missing ' . count($missingInConf) . " active peer(s) in conf.\n";
+        printWireguardAccountLines($missingInConf);
+    } else {
+        echo "wg0.conf saved: {$after['conf_peer_count']} peers\n";
+    }
+
     echo "\n=== Summary ===\n";
     echo 'Added: ' . count($result['added']) . '  Removed: ' . count($result['removed']) . '  Errors: ' . count($result['errors']) . "\n";
-    echo 'Diff remaining: ' . countWireguardDiffIssues($result['after']) . "\n";
+    echo 'Diff remaining: ' . countWireguardDiffIssues($after) . "\n";
+    echo 'wg0.conf: ' . ($confSaved ? 'saved' : 'NOT saved') . "\n";
 
     $elapsed = (hrtime(true) - $startedAt) / 1e9;
     echo 'Elapsed: ' . formatElapsed($elapsed) . "\n";
 
-    exit($result['errors'] !== [] || countWireguardDiffIssues($result['after']) > 0 ? 1 : 0);
+    exit($result['errors'] !== [] || countWireguardDiffIssues($after) > 0 || !$confSaved ? 1 : 0);
 } catch (Throwable $e) {
     fwrite(STDERR, $e->getMessage() . PHP_EOL);
     exit(1);

@@ -1214,7 +1214,15 @@ final class WireGuardManager
             $result = Shell::runScript($script, [$this->wgInterface(), $peersFile], false);
 
             if ($result['exit_code'] !== 0) {
-                throw new RuntimeException(trim((string) ($result['output'] ?? 'persist-wg-peers failed')));
+                $detail = trim((string) ($result['output'] ?? ''));
+                if ($detail === '') {
+                    $detail = 'no output from persist-wg-peers.sh';
+                }
+
+                throw new RuntimeException(
+                    'persist-wg-peers.sh failed (exit ' . $result['exit_code'] . '): ' . $detail
+                    . '. Check sudoers for persist-wg-peers.sh, then: sudo bash scripts/fix-permissions.sh'
+                );
             }
         } finally {
             if (is_file($peersFile)) {

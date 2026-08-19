@@ -141,15 +141,21 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y \
     wireguard wireguard-tools mariadb-server mariadb-client \
-    php8.3 php8.3-mysql php8.3-cli php8.3-gd \
+    php8.3 php8.3-cli php8.3-mysql php8.3-gd php8.3-mbstring php8.3-curl \
     apache2 libapache2-mod-php8.3 \
-    iptables iproute2 curl composer unzip \
-    certbot python3-certbot-apache
+    iptables iproute2 curl unzip rsync \
+    composer certbot python3-certbot-apache
 
 if ! php -r 'exit(extension_loaded("sodium") ? 0 : 1);'; then
     echo "ERROR: PHP sodium extension is not available."
     echo "On Ubuntu 24.04 it should be included in php8.3-cli by default."
     echo "Try: sudo apt-get install --reinstall php8.3-cli"
+    exit 1
+fi
+
+if ! php -r 'exit(extension_loaded("mbstring") && extension_loaded("curl") && extension_loaded("gd") && extension_loaded("pdo_mysql") ? 0 : 1);'; then
+    echo "ERROR: Required PHP extensions are missing (mbstring, curl, gd, pdo_mysql)."
+    echo "Try: sudo apt-get install --reinstall php8.3-mbstring php8.3-curl php8.3-gd php8.3-mysql"
     exit 1
 fi
 
@@ -177,8 +183,18 @@ fi
 
 echo "==> Installing PHP dependencies..."
 cd "$PANEL_DIR"
-composer install --no-dev --optimize-autoloader --no-interaction
-chown -R www-data:www-data "$PANEL_DIR/vendor" 2>/dev/null || true
+if [[ ! -f composer.json ]]; then
+    echo "ERROR: composer.json not found in ${PANEL_DIR}"
+    exit 1
+fi
+export COMPOSER_ALLOW_SUPERUSER=1
+composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+if [[ ! -f "$PANEL_DIR/vendor/autoload.php" ]]; then
+    echo "ERROR: composer install did not create vendor/autoload.php"
+    exit 1
+fi
+php -r 'require "vendor/autoload.php"; echo "Composer autoload OK\n";'
+chown -R www-data:www-data "$PANEL_DIR/vendor"
 
 mkdir -p "$PANEL_DIR/storage/sessions"
 mkdir -p "$PANEL_DIR/storage/login-throttle"
