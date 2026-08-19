@@ -1,5 +1,28 @@
 [
   {
+    "Id": 3,
+    "Title": "Deploy main to production",
+    "Date": "2026-08-19T16:06:22.0277589+03:30",
+    "FilesCount": 12,
+    "Branch": "main",
+    "Status": "Success",
+    "Files": [
+      "README.md",
+      "docs/overview.md",
+      "public/api/openapi.yaml",
+      "public/qr.php",
+      "public/settings.php",
+      "scripts/backup.php",
+      "scripts/read-wg-conf.sh",
+      "scripts/restore-wg-conf.sh",
+      "src/Api/Router.php",
+      "src/BackupManager.php",
+      "src/QrGenerator.php",
+      "src/WireGuardManager.php"
+    ],
+    "CommitHash": "d662978185d4c0aa93299455ea602429f6eb60b8"
+  },
+  {
     "Id": 2,
     "Title": "Deploy main to production",
     "Date": "2026-08-19T15:34:31.6284625+03:30",
@@ -56,26 +79,23 @@
     "CommitHash": "f8a4ab37d8f4b00f2fa271237cbb0fc9d2acab7c"
   },
   {
-    "Id": 3,
+    "Id": 4,
     "Title": "Deploy main to production",
-    "Date": "2026-08-19T16:06:22.0277589+03:30",
-    "FilesCount": 12,
+    "Date": "2026-08-19T16:26:29.3427934+03:30",
+    "FilesCount": 9,
     "Branch": "main",
     "Status": "Success",
     "Files": [
-      "README.md",
+      "config/config.example.php",
       "docs/overview.md",
-      "public/api/openapi.yaml",
-      "public/qr.php",
+      "public/assets/ip-tags-input.js",
+      "public/assets/ip-tags.css",
       "public/settings.php",
-      "scripts/backup.php",
-      "scripts/read-wg-conf.sh",
-      "scripts/restore-wg-conf.sh",
-      "src/Api/Router.php",
-      "src/BackupManager.php",
-      "src/QrGenerator.php",
-      "src/WireGuardManager.php"
+      "src/Api/ApiAuth.php",
+      "src/ApiAllowedIp.php",
+      "src/ConfigWriter.php",
+      "src/SettingsStore.php"
     ],
-    "CommitHash": "d662978185d4c0aa93299455ea602429f6eb60b8"
+    "CommitHash": "f896736cb7366fa120db7fad61b532eb51e2f717"
   }
 ]

@@ -268,6 +268,7 @@ return [
         'backup' => '${PANEL_DIR}/scripts/backup.php',
         'read_wg_conf' => '${PANEL_DIR}/scripts/read-wg-conf.sh',
         'restore_wg_conf' => '${PANEL_DIR}/scripts/restore-wg-conf.sh',
+        'persist_wg_peers' => '${PANEL_DIR}/scripts/persist-wg-peers.sh',
     ],
     'backup' => [
         'enabled' => false,
@@ -381,6 +382,8 @@ www-data ALL=(root) NOPASSWD: ${PANEL_DIR}/scripts/read-wg-conf.sh
 www-data ALL=(root) NOPASSWD: /bin/bash ${PANEL_DIR}/scripts/read-wg-conf.sh *
 www-data ALL=(root) NOPASSWD: ${PANEL_DIR}/scripts/restore-wg-conf.sh
 www-data ALL=(root) NOPASSWD: /bin/bash ${PANEL_DIR}/scripts/restore-wg-conf.sh *
+www-data ALL=(root) NOPASSWD: ${PANEL_DIR}/scripts/persist-wg-peers.sh
+www-data ALL=(root) NOPASSWD: /bin/bash ${PANEL_DIR}/scripts/persist-wg-peers.sh *
 SUDO
 chmod 440 /etc/sudoers.d/wg-panel
 
@@ -388,11 +391,12 @@ echo "==> Setting up cron..."
 cat > /etc/cron.d/wg-panel <<CRON
 */5 * * * * root php ${PANEL_DIR}/scripts/check-limits.php >> /var/log/wg-panel-limits.log 2>&1
 */5 * * * * root php ${PANEL_DIR}/scripts/sync-traffic.php >> /var/log/wg-panel-sync.log 2>&1
+*/5 * * * * root php ${PANEL_DIR}/scripts/sync-wg.php >> /var/log/wg-panel-wgsync.log 2>&1
 0 * * * * www-data php ${PANEL_DIR}/scripts/backup.php >> /var/log/wg-panel-backup.log 2>&1
 15 3 * * * root find ${PANEL_DIR}/storage/sessions -name 'sess_*' -mmin +4320 -delete
 CRON
 
-touch /var/log/wg-panel-sync.log /var/log/wg-panel-limits.log /var/log/wg-panel-backup.log
+touch /var/log/wg-panel-sync.log /var/log/wg-panel-limits.log /var/log/wg-panel-backup.log /var/log/wg-panel-wgsync.log
 
 echo
 echo "============================================"

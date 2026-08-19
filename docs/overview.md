@@ -125,7 +125,7 @@ wg-panel/
 
 - 💚 `health` — سلامت سرویس
 - 🔐 `auth` — login / logout / me
-- 👥 `accounts` — CRUD، toggle، ریست، QR، کانفیگ، آنلاین (لیست بدون صفحه همه اکانت‌ها را می‌دهد)
+- 👥 `accounts` — CRUD، toggle، ریست، QR، کانفیگ، آنلاین، انقضای نزدیک (لیست بدون صفحه همه اکانت‌ها را می‌دهد)
 - 📈 `traffic` — سینک ترافیک
 - ⛔ `limits` — اعمال سقف حجم و انقضا
 - 🖥️ `server` — اطلاعات سرور WG
@@ -164,17 +164,21 @@ wg-panel/
 ```bash
 php /opt/wg-panel/scripts/sync-traffic.php
 php /opt/wg-panel/scripts/check-limits.php
+php /opt/wg-panel/scripts/sync-wg.php
 ```
+
+قطع اتصال بعد از حذف همان لحظه از تونل زنده است. `wg0.conf` هر ۵ دقیقه از دیتابیس نوشته می‌شود.
 
 | ایموجی | اسکریپت | کار |
 |--------|---------|-----|
 | 📊 | `sync-traffic.php` | خواندن ترافیک از `wg` و ذخیره در DB |
 | ⛔ | `check-limits.php` | قطع اکانت منقضی یا پر حجم |
-| 🔄 | `sync-wg.php` | همگام DB ↔ `wg0.conf` ↔ runtime |
+| 🔄 | `sync-wg.php` | همگام DB ↔ runtime؛ نوشتن `[Peer]` در `wg0.conf` از دیتابیس |
+| 📝 | `persist-wg-peers.sh` | بازنویسی اتمی `[Peer]` با حفظ `[Interface]` |
 | 🚦 | `restore-tc.php` | بازگردانی قوانین سرعت |
 | 💾 | `backup.php` | بکاپ زمان‌بندی‌شده + ارسال اختیاری به تلگرام |
-| ➕ | `apply-peer.sh` | افزودن peer زنده |
-| ➖ | `remove-peer.sh` | حذف peer زنده |
+| ➕ | `apply-peer.sh` | افزودن peer زنده (`wg set` + tc) |
+| ➖ | `remove-peer.sh` | حذف peer زنده (`wg set` + tc) |
 | 🧪 | `debug-traffic.php` | عیب‌یابی ترافیک |
 
 ---

@@ -161,6 +161,10 @@ final class Router
             ]);
         }
 
+        if (($segments[1] ?? '') === 'expiring-soon' && $method === 'GET') {
+            self::listExpiringSoon($wgManager);
+        }
+
         if (!isset($segments[1]) || $segments[1] === '') {
             if ($method === 'GET') {
                 self::listAccounts($wgManager, $config);
@@ -339,6 +343,37 @@ final class Router
         }
 
         Http::ok($items, 200, $meta);
+    }
+
+    private static function listExpiringSoon(WireGuardManager $wgManager): never
+    {
+        $hours = isset($_GET['hours']) ? (int) $_GET['hours'] : 24;
+        $hours = max(1, min(168, $hours));
+
+        $accounts = $wgManager->listExpiringSoon($hours);
+        $online = $wgManager->getOnlineStatusesForAccounts($accounts);
+        $now = time();
+
+        $items = [];
+        foreach ($accounts as $account) {
+            $item = AccountResource::summary(
+                $account,
+                $online[(string) $account['id']] ?? $online[(int) $account['id']] ?? null,
+                $wgManager,
+            );
+            $item['days_until_expiry'] = Helpers::daysUntilExpiryForAccount($account);
+            $expiresTs = strtotime((string) $account['expires_at']);
+            $item['hours_until_expiry'] = $expiresTs === false
+                ? null
+                : round(max(0, $expiresTs - $now) / 3600, 2);
+            $items[] = $item;
+        }
+
+        Http::ok($items, 200, [
+            'count' => count($items),
+            'hours' => $hours,
+            'until' => date('c', $now + ($hours * 3600)),
+        ]);
     }
 
     /** @return array<string, mixed> */

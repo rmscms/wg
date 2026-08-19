@@ -277,6 +277,7 @@ curl -H "Authorization: Bearer TOKEN" \
 | GET | `/api/v1/accounts/{id}/traffic-logs` | تاریخچه مصرف |
 | GET | `/api/v1/accounts/{id}/transfer` | آمار خام `wg transfer` |
 | GET | `/api/v1/accounts/online-status` | وضعیت آنلاین همه (+ `wg_ok`) |
+| GET | `/api/v1/accounts/expiring-soon` | اکانت‌هایی که تا ۲۴ ساعت دیگر منقضی می‌شوند (`?hours=` اختیاری) |
 | GET | `/api/v1/accounts/{id}/online-status` | وضعیت آنلاین یک اکانت |
 | POST | `/api/v1/traffic/sync` | همگام‌سازی ترافیک + enforce |
 | POST | `/api/v1/traffic/sync-data` | فقط sync (با گزارش verbose) |
@@ -333,6 +334,7 @@ sudo wg show wg0
 # لاگ cron
 tail -f /var/log/wg-panel-sync.log
 tail -f /var/log/wg-panel-limits.log
+tail -f /var/log/wg-panel-wgsync.log
 
 # تست دستی
 sudo php /opt/wg-panel/scripts/sync-traffic.php
@@ -349,6 +351,12 @@ sudo php /opt/wg-panel/scripts/sync-wg.php --dry-run
 
 # فقط WireGuard sync
 sudo php /opt/wg-panel/scripts/sync-wg.php
+```
+
+روی سرور زنده بعد از دیپلوی: `sudo bash /opt/wg-panel/scripts/fix-permissions.sh` و این خط را در `/etc/cron.d/wg-panel` بگذارید اگر نیست:
+
+```
+*/5 * * * * root php /opt/wg-panel/scripts/sync-wg.php >> /var/log/wg-panel-wgsync.log 2>&1
 ```
 
 `restore-tc.php` به‌صورت پیش‌فرض **هر دو فاز** را اجرا می‌کند:

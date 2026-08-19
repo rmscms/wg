@@ -475,6 +475,27 @@ final class WireGuardManager
         return $stmt->fetchAll();
     }
 
+    /**
+     * Accounts whose expires_at is after now and within the next $hours hours.
+     * Skips unlimited and first-connect-not-yet-connected (expires_at is null).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function listExpiringSoon(int $hours = 24): array
+    {
+        $hours = max(1, min(168, $hours));
+
+        $stmt = $this->db->query(
+            'SELECT * FROM accounts
+             WHERE expires_at IS NOT NULL
+               AND expires_at > NOW()
+               AND expires_at <= DATE_ADD(NOW(), INTERVAL ' . $hours . ' HOUR)
+             ORDER BY expires_at ASC'
+        );
+
+        return $stmt->fetchAll();
+    }
+
     public function countAccounts(?string $search = null): int
     {
         $like = self::accountSearchLike($search);
@@ -788,8 +809,7 @@ final class WireGuardManager
             }
         }
 
-        $confPath = (string) ($this->config['wireguard']['config_path'] ?? '/etc/wireguard/' . $this->wgInterface() . '.conf');
-        $confKeys = $this->parseConfPeerKeys($confPath);
+        $confKeys = $this->loadConfPeerKeys();
         $runtimeKeys = $this->parseRuntimePeerKeys();
         $confSet = array_fill_keys($confKeys, true);
         $runtimeSet = array_fill_keys($runtimeKeys, true);
@@ -831,9 +851,10 @@ final class WireGuardManager
     }
 
     /**
-     * Sync wg0.conf and live WireGuard with database:
-     * - Remove stale peers from conf/runtime
-     * - Add active peers missing from conf and/or runtime
+     * Sync live WireGuard with database, then rewrite wg0.conf [Peer] blocks from DB.
+     * - Remove stale peers from runtime
+     * - Add active peers missing from runtime
+     * - Persist [Peer] section from active accounts (keeps [Interface])
      *
      * @return array{
      *     added: list<string>,
@@ -860,7 +881,6 @@ final class WireGuardManager
             return $summary;
         }
 
-        $confPath = (string) ($this->config['wireguard']['config_path'] ?? '/etc/wireguard/' . $this->wgInterface() . '.conf');
         $allAccounts = $this->db->query('SELECT * FROM accounts')->fetchAll();
         $dbKeyMap = [];
         $activeByKey = [];
@@ -877,15 +897,8 @@ final class WireGuardManager
             }
         }
 
-        $staleKeys = [];
-        foreach ($before['stale_in_conf'] as $item) {
-            $staleKeys[$item['public_key']] = true;
-        }
         foreach ($before['stale_in_runtime'] as $item) {
-            $staleKeys[$item['public_key']] = true;
-        }
-
-        foreach (array_keys($staleKeys) as $key) {
+            $key = $item['public_key'];
             $account = $dbKeyMap[$key] ?? null;
 
             try {
@@ -898,7 +911,6 @@ final class WireGuardManager
                     }
 
                     $this->removePeerFromRuntime($key);
-                    $this->removeKeyFromConf($confPath, $key);
                     $summary['removed'][] = 'orphan:' . substr($key, 0, 12) . '…';
                 }
             } catch (Throwable $e) {
@@ -906,26 +918,24 @@ final class WireGuardManager
             }
         }
 
-        $toAdd = [];
-        foreach ($before['missing_in_conf'] as $item) {
-            $toAdd[$item['public_key']] = true;
-        }
         foreach ($before['missing_in_runtime'] as $item) {
-            $toAdd[$item['public_key']] = true;
-        }
-
-        foreach (array_keys($toAdd) as $key) {
-            $account = $activeByKey[$key] ?? null;
+            $account = $activeByKey[$item['public_key']] ?? null;
             if ($account === null) {
                 continue;
             }
 
             try {
                 $this->applyPeer($account);
-                $summary['added'][] = ($account['name'] ?? $key) . ' (' . ($account['ip_address'] ?? '') . ')';
+                $summary['added'][] = ($account['name'] ?? $item['public_key']) . ' (' . ($account['ip_address'] ?? '') . ')';
             } catch (Throwable $e) {
-                $summary['errors'][] = ($account['name'] ?? $key) . ': ' . $e->getMessage();
+                $summary['errors'][] = ($account['name'] ?? $item['public_key']) . ': ' . $e->getMessage();
             }
+        }
+
+        try {
+            $this->persistConfPeers(array_values($activeByKey));
+        } catch (Throwable $e) {
+            $summary['errors'][] = 'persist wg0.conf: ' . $e->getMessage();
         }
 
         $summary['after'] = $this->analyzeWireguardSync();
@@ -1045,6 +1055,32 @@ final class WireGuardManager
     }
 
     /** @return string[] list of public keys found in [Peer] blocks */
+    private function loadConfPeerKeys(): array
+    {
+        $confPath = (string) ($this->config['wireguard']['config_path'] ?? '/etc/wireguard/' . $this->wgInterface() . '.conf');
+
+        if (is_readable($confPath)) {
+            return $this->parseConfPeerKeys($confPath);
+        }
+
+        $tmp = dirname(__DIR__) . '/storage/wg-conf-read.' . getmypid() . '.conf';
+        $script = (string) ($this->config['scripts']['read_wg_conf'] ?? dirname(__DIR__) . '/scripts/read-wg-conf.sh');
+
+        try {
+            $result = Shell::runScript($script, [$this->wgInterface(), $tmp], false);
+            if ($result['exit_code'] !== 0 || !is_readable($tmp)) {
+                return [];
+            }
+
+            return $this->parseConfPeerKeys($tmp);
+        } finally {
+            if (is_file($tmp)) {
+                @unlink($tmp);
+            }
+        }
+    }
+
+    /** @return string[] list of public keys found in [Peer] blocks */
     private function parseConfPeerKeys(string $confPath): array
     {
         if (!is_readable($confPath)) {
@@ -1055,6 +1091,7 @@ final class WireGuardManager
         $inPeer  = false;
 
         foreach (file($confPath, FILE_IGNORE_NEW_LINES) as $line) {
+            $line = rtrim($line, "\r");
             $line = trim($line);
             if (strtolower($line) === '[peer]') {
                 $inPeer = true;
@@ -1076,27 +1113,51 @@ final class WireGuardManager
         return $keys;
     }
 
-    /** Remove a single [Peer] block by public key directly from the conf file */
-    private function removeKeyFromConf(string $confPath, string $publicKey): void
+    /**
+     * Replace [Peer] blocks in wg0.conf from active DB accounts. Keeps [Interface].
+     *
+     * @param list<array<string, mixed>> $activeAccounts
+     */
+    private function persistConfPeers(array $activeAccounts): void
     {
-        if (!is_readable($confPath) || !is_writable($confPath)) {
-            return;
+        $script = (string) ($this->config['scripts']['persist_wg_peers'] ?? dirname(__DIR__) . '/scripts/persist-wg-peers.sh');
+        $storageDir = dirname(__DIR__) . '/storage';
+
+        if (!is_dir($storageDir) && !mkdir($storageDir, 0750, true) && !is_dir($storageDir)) {
+            throw new RuntimeException('Cannot create storage directory for WireGuard persist.');
         }
 
-        $escapedKey = escapeshellarg($publicKey);
-        $escapedConf = escapeshellarg($confPath);
+        $peersFile = $storageDir . '/wg-peers.' . bin2hex(random_bytes(8)) . '.txt';
+        $blocks = [];
 
-        Shell::run(
-            "awk -v key={$escapedKey} '" .
-            'BEGIN{in_peer=0;skip=0;block=""} ' .
-            '/^\[Peer\]/{if(in_peer&&!skip)printf"%s",block;in_peer=1;skip=0;block=$0"\n";next} ' .
-            'in_peer{if(/^\[/&&!/^\[Peer\]/){if(!skip)printf"%s",block;in_peer=0;skip=0;block="";print;next} ' .
-            'if($0~"^PublicKey = "key"$")skip=1;block=block$0"\n";next} ' .
-            '{print} END{if(in_peer&&!skip)printf"%s",block}' .
-            "' {$escapedConf} > {$escapedConf}.tmp && mv {$escapedConf}.tmp {$escapedConf}",
-            false,
-            true
-        );
+        foreach ($activeAccounts as $account) {
+            $key = trim((string) ($account['public_key'] ?? ''));
+            $ip = trim((string) ($account['ip_address'] ?? ''));
+
+            if (!$this->isValidWireGuardPublicKey($key) || $ip === '' || !filter_var($ip, FILTER_VALIDATE_IP)) {
+                continue;
+            }
+
+            $blocks[] = "[Peer]\nPublicKey = {$key}\nAllowedIPs = {$ip}/32";
+        }
+
+        $payload = $blocks === [] ? '' : implode("\n\n", $blocks) . "\n";
+
+        try {
+            if (file_put_contents($peersFile, $payload) === false) {
+                throw new RuntimeException('Cannot write WireGuard peers snapshot.');
+            }
+
+            $result = Shell::runScript($script, [$this->wgInterface(), $peersFile], false);
+
+            if ($result['exit_code'] !== 0) {
+                throw new RuntimeException(trim((string) ($result['output'] ?? 'persist-wg-peers failed')));
+            }
+        } finally {
+            if (is_file($peersFile)) {
+                @unlink($peersFile);
+            }
+        }
     }
 
     public function purgeInactivePeers(): void

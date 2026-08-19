@@ -69,6 +69,7 @@ return [
         'backup' => '/opt/wg-panel/scripts/backup.php',
         'read_wg_conf' => '/opt/wg-panel/scripts/read-wg-conf.sh',
         'restore_wg_conf' => '/opt/wg-panel/scripts/restore-wg-conf.sh',
+        'persist_wg_peers' => '/opt/wg-panel/scripts/persist-wg-peers.sh',
     ],
 
     'backup' => [

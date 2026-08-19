@@ -309,6 +309,29 @@ paths:
         '200':
           description: Includes wg_ok, online_timeout, and accounts map
 
+  /accounts/expiring-soon:
+    get:
+      tags: [Accounts]
+      summary: Accounts expiring within the next hours
+      description: |
+        Returns accounts whose `expires_at` is after now and within the window (default 24 hours).
+        Already expired, unlimited, and first-connect-not-yet-connected accounts are omitted.
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      parameters:
+        - name: hours
+          in: query
+          description: Window in hours (1–168). Default 24.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 168
+            default: 24
+      responses:
+        '200':
+          description: Account list with hours_until_expiry; meta.hours and meta.until
+
   /accounts/{id}:
     parameters:
       - name: id

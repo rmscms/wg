@@ -57,6 +57,8 @@ www-data ALL=(root) NOPASSWD: ${ROOT}/scripts/read-wg-conf.sh
 www-data ALL=(root) NOPASSWD: /bin/bash ${ROOT}/scripts/read-wg-conf.sh *
 www-data ALL=(root) NOPASSWD: ${ROOT}/scripts/restore-wg-conf.sh
 www-data ALL=(root) NOPASSWD: /bin/bash ${ROOT}/scripts/restore-wg-conf.sh *
+www-data ALL=(root) NOPASSWD: ${ROOT}/scripts/persist-wg-peers.sh
+www-data ALL=(root) NOPASSWD: /bin/bash ${ROOT}/scripts/persist-wg-peers.sh *
 SUDO
 chmod 440 /etc/sudoers.d/wg-panel
 
