@@ -447,7 +447,7 @@ require __DIR__ . '/includes/header.php';
                     <div class="backup-item-info">
                         <strong dir="ltr"><?= e($item['filename']) ?></strong>
                         <span class="muted">
-                            <?= e(date('Y-m-d H:i', $item['created_at'])) ?>
+                            <?= e(WgPanel\Jalali::format(date('Y-m-d H:i:s', (int) $item['created_at']), 'Y/m/d H:i')) ?>
                             · <?= e(WgPanel\BackupManager::formatBytes($item['size'])) ?>
                         </span>
                     </div>
@@ -531,7 +531,7 @@ require __DIR__ . '/includes/header.php';
             <?php if (!empty($backup['last_run_at'])): ?>
             <div class="settings-row">
                 <label>آخرین بک‌آپ خودکار</label>
-                <input type="text" value="<?= e(date('Y-m-d H:i:s', (int) $backup['last_run_at'])) ?>" readonly dir="ltr">
+                <input type="text" value="<?= e(WgPanel\Jalali::format(date('Y-m-d H:i:s', (int) $backup['last_run_at']), 'Y/m/d H:i:s')) ?>" readonly dir="ltr">
             </div>
             <?php endif; ?>
 

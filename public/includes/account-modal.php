@@ -113,8 +113,8 @@
                         </div>
                         <div id="am-expiry-fixed">
                             <label class="am-field">
-                                تاریخ انقضا
-                                <input type="datetime-local" name="expires_at" id="am-f-expires">
+                                تاریخ انقضا (شمسی)
+                                <input type="text" name="expires_at" id="am-f-expires" data-jalali-datetime placeholder="1404/05/28 23:59">
                             </label>
                         </div>
                         <div id="am-expiry-first" hidden>

@@ -1,5 +1,26 @@
 [
   {
+    "Id": 6,
+    "Title": "Deploy main to production",
+    "Date": "2026-08-19T17:27:08.4550356+03:30",
+    "FilesCount": 10,
+    "Branch": "main",
+    "Status": "Success",
+    "Files": [
+      "docs/overview.md",
+      "public/assets/account-modal.css",
+      "public/assets/account-modal.js",
+      "public/assets/dashboard.js",
+      "public/edit.php",
+      "public/includes/account-modal-ajax.php",
+      "public/includes/account-modal.php",
+      "public/includes/dashboard-list-fragments.php",
+      "public/index.php",
+      "public/view.php"
+    ],
+    "CommitHash": "75925816b3efce40f00dfcc0ef75d37e69dffff4"
+  },
+  {
     "Id": 5,
     "Title": "Deploy main to production",
     "Date": "2026-08-19T17:06:00.9927732+03:30",
@@ -121,24 +142,20 @@
     "CommitHash": "f8a4ab37d8f4b00f2fa271237cbb0fc9d2acab7c"
   },
   {
-    "Id": 6,
+    "Id": 7,
     "Title": "Deploy main to production",
-    "Date": "2026-08-19T17:27:08.4550356+03:30",
-    "FilesCount": 10,
+    "Date": "2026-08-19T17:54:43.6940965+03:30",
+    "FilesCount": 6,
     "Branch": "main",
     "Status": "Success",
     "Files": [
-      "docs/overview.md",
-      "public/assets/account-modal.css",
-      "public/assets/account-modal.js",
       "public/assets/dashboard.js",
-      "public/edit.php",
-      "public/includes/account-modal-ajax.php",
-      "public/includes/account-modal.php",
+      "public/assets/style.css",
+      "public/bootstrap.php",
       "public/includes/dashboard-list-fragments.php",
       "public/index.php",
-      "public/view.php"
+      "src/WireGuardManager.php"
     ],
-    "CommitHash": "75925816b3efce40f00dfcc0ef75d37e69dffff4"
+    "CommitHash": "f00ba777ca7c34698bc6c0176d5782bf61719179"
   }
 ]

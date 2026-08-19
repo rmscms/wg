@@ -141,7 +141,7 @@ wg-panel/
 | 🧠 | `WireGuardManager` | قلب پنل: اکانت، ترافیک، محدودیت، سینک |
 | 🗄️ | `Database` | اتصال PDO به MariaDB |
 | 🛠️ | `Helpers` | فرمت حجم، سرعت، CSRF، فلش |
-| 📅 | `Jalali` | تاریخ شمسی در UI |
+| 📅 | `Jalali` | تاریخ شمسی در UI؛ تبدیل ورودی شمسی به میلادی برای DB |
 | 📷 | `QrGenerator` | QR محلی |
 | ✍️ | `ConfigWriter` | ذخیره تنظیمات در `config.php` |
 | 💾 | `BackupManager` | آرشیو بکاپ |

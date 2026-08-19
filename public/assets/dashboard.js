@@ -400,7 +400,7 @@
                 return;
             }
 
-            if (target.name === 'status' || target.type === 'date') {
+            if (target.name === 'status' || target.hasAttribute('data-jalali-date')) {
                 fetchList({ page: 1 }, true);
             }
         });

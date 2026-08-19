@@ -218,17 +218,12 @@ function dashboardStatusFilterOptions(): array
 
 function dashboardParseDateParam(mixed $value): string
 {
-    $value = trim((string) $value);
-    if ($value === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+    $gregorian = WgPanel\Jalali::parseDate((string) $value);
+    if ($gregorian === null) {
         return '';
     }
 
-    $dt = DateTimeImmutable::createFromFormat('!Y-m-d', $value);
-    if ($dt === false || $dt->format('Y-m-d') !== $value) {
-        return '';
-    }
-
-    return $value;
+    return WgPanel\Jalali::formatInputDate($gregorian);
 }
 
 /** @param array<string, mixed> $state */
@@ -236,10 +231,10 @@ function dashboardAccountFilters(array $state): array
 {
     return [
         'status' => (string) ($state['status'] ?? ''),
-        'created_from' => (string) ($state['created_from'] ?? ''),
-        'created_to' => (string) ($state['created_to'] ?? ''),
-        'expires_from' => (string) ($state['expires_from'] ?? ''),
-        'expires_to' => (string) ($state['expires_to'] ?? ''),
+        'created_from' => WgPanel\Jalali::parseDate((string) ($state['created_from'] ?? '')) ?? '',
+        'created_to' => WgPanel\Jalali::parseDate((string) ($state['created_to'] ?? '')) ?? '',
+        'expires_from' => WgPanel\Jalali::parseDate((string) ($state['expires_from'] ?? '')) ?? '',
+        'expires_to' => WgPanel\Jalali::parseDate((string) ($state['expires_to'] ?? '')) ?? '',
     ];
 }
 

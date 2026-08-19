@@ -163,9 +163,10 @@ require __DIR__ . '/includes/header.php';
 
                 <div id="expiry-fixed-block" class="expiry-panel">
                     <label>
-                        تاریخ انقضا
-                        <input type="datetime-local" name="expires_at" value="<?= e($_POST['expires_at'] ?? '') ?>">
-                        <small class="hint">خالی = بدون انقضا</small>
+                        تاریخ انقضا (شمسی)
+                        <input type="text" name="expires_at" data-jalali-datetime placeholder="1404/05/28 23:59"
+                               value="<?= e($_POST['expires_at'] ?? '') ?>">
+                        <small class="hint">خالی = بدون انقضا — مثال: 1404/05/28 23:59</small>
                     </label>
                 </div>
 

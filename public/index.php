@@ -220,19 +220,19 @@ require __DIR__ . '/includes/header.php';
                 <div class="filter-dates">
                     <label class="filter-date">
                         <span>ایجاد از</span>
-                        <input type="date" name="created_from" id="dashboard-created-from" value="<?= e((string) ($listState['created_from'] ?? '')) ?>">
+                        <input type="text" name="created_from" id="dashboard-created-from" data-jalali-date placeholder="1404/01/01" value="<?= e((string) ($listState['created_from'] ?? '')) ?>">
                     </label>
                     <label class="filter-date">
                         <span>تا</span>
-                        <input type="date" name="created_to" id="dashboard-created-to" value="<?= e((string) ($listState['created_to'] ?? '')) ?>">
+                        <input type="text" name="created_to" id="dashboard-created-to" data-jalali-date placeholder="1404/12/29" value="<?= e((string) ($listState['created_to'] ?? '')) ?>">
                     </label>
                     <label class="filter-date">
                         <span>انقضا از</span>
-                        <input type="date" name="expires_from" id="dashboard-expires-from" value="<?= e((string) ($listState['expires_from'] ?? '')) ?>">
+                        <input type="text" name="expires_from" id="dashboard-expires-from" data-jalali-date placeholder="1404/01/01" value="<?= e((string) ($listState['expires_from'] ?? '')) ?>">
                     </label>
                     <label class="filter-date">
                         <span>تا</span>
-                        <input type="date" name="expires_to" id="dashboard-expires-to" value="<?= e((string) ($listState['expires_to'] ?? '')) ?>">
+                        <input type="text" name="expires_to" id="dashboard-expires-to" data-jalali-date placeholder="1404/12/29" value="<?= e((string) ($listState['expires_to'] ?? '')) ?>">
                     </label>
                     <button
                         type="button"

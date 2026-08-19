@@ -647,17 +647,7 @@ final class WireGuardManager
 
     private static function accountFilterDate(mixed $value): ?string
     {
-        $value = trim((string) $value);
-        if ($value === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
-            return null;
-        }
-
-        $dt = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
-        if ($dt === false || $dt->format('Y-m-d') !== $value) {
-            return null;
-        }
-
-        return $value;
+        return Jalali::parseDate((string) $value);
     }
 
     /**
@@ -1802,17 +1792,17 @@ final class WireGuardManager
 
     private function normalizeExpiry(?string $expiresAt): ?string
     {
-        if ($expiresAt === null || trim($expiresAt) === '') {
+        if ($expiresAt === null || trim((string) $expiresAt) === '') {
             return null;
         }
 
-        $timestamp = strtotime($expiresAt);
+        $normalized = Jalali::parseDateTime($expiresAt);
 
-        if ($timestamp === false) {
-            throw new RuntimeException('Invalid expiration date.');
+        if ($normalized === null) {
+            throw new RuntimeException('تاریخ انقضا نامعتبر است.');
         }
 
-        return date('Y-m-d H:i:s', $timestamp);
+        return $normalized;
     }
 
     /** @return array{expiry_mode: string, expiry_duration_days: ?int, expires_at: ?string, first_connected_at: ?string} */

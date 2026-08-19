@@ -178,6 +178,11 @@ final class Helpers
         return Jalali::formatDate($value);
     }
 
+    public static function changeNumberToEn(string $value): string
+    {
+        return Jalali::changeNumberToEn($value);
+    }
+
     /** Wrap Latin/numeric text for correct display inside RTL layouts. */
     public static function ltrIsolate(string $text): string
     {

@@ -6,6 +6,7 @@
     <title><?= e($pageTitle ?? 'WireGuard Panel') ?></title>
     <link rel="stylesheet" href="/assets/fonts.css">
     <link rel="stylesheet" href="/assets/style.css">
+    <link rel="stylesheet" href="/assets/jalali-datepicker.css">
     <?php if (!empty($pageStyles) && is_array($pageStyles)): ?>
         <?php foreach ($pageStyles as $styleHref): ?>
             <link rel="stylesheet" href="<?= e($styleHref) ?>">

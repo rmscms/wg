@@ -44,7 +44,7 @@ function accountModalPayload(array $account, WgPanel\WireGuardManager $wgManager
         'volume_percent' => $volumePercent,
         'expiry_mode' => (string) ($account['expiry_mode'] ?? 'fixed'),
         'expires_at' => $expiresAt,
-        'expires_at_local' => $expiresAt ? date('Y-m-d\TH:i', strtotime((string) $expiresAt)) : '',
+        'expires_at_local' => $expiresAt ? WgPanel\Jalali::formatInputDateTime((string) $expiresAt) : '',
         'expiry_display' => WgPanel\Helpers::formatExpiryDisplay($account),
         'expiry_duration_days' => (int) ($account['expiry_duration_days'] ?? 30) ?: 30,
         'first_connected_at' => $account['first_connected_at'] ?? null,
