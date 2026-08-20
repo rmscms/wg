@@ -2,11 +2,15 @@
 
 پنل مدیریت WireGuard برای Ubuntu 24، PHP 8.3، Apache و **MariaDB** با قابلیت‌های:
 
-- ایجاد و حذف اکانت
+- ایجاد، ویرایش و حذف اکانت (مدال داشبورد)
+- جستجوی زنده + فیلتر وضعیت و بازه تاریخ شمسی
 - **QR Code محلی** (بدون API خارجی)
-- تاریخ انقضا
+- تاریخ انقضا شمسی در UI (`fixed` یا از اولین اتصال)
 - محدودیت سرعت (tc/HTB)
 - محدودیت حجم (شمارش ترافیک WireGuard)
+- لینک Subscribe برای اپ و پنل وب کاربر
+- REST API v1 + Swagger + لیست IP مجاز Bearer
+- بکاپ دیتابیس و `wg0.conf` (اختیاری تلگرام)
 
 ## پیش‌نیاز
 
@@ -39,13 +43,14 @@ sudo bash install.sh
 
 اسکریپت نصب این موارد را انجام می‌دهد:
 
-1. نصب WireGuard، PHP 8.3، Apache، **MariaDB**، **Certbot**
-2. ایجاد دیتابیس، کاربر و جداول با index
-3. کپی پنل به `/opt/wg-panel`
-4. راه‌اندازی `wg0` با endpoint دامنه
-5. پیکربندی Apache روی دامنه پنل + **SSL (Let's Encrypt)**
-6. ست کردن `subscribe_base_url` روی `https://دامنه-پنل`
-7. sudo و cron
+1. نصب WireGuard، PHP 8.3 (`mbstring`، `curl`، `gd`، `mysql`)، Apache، **MariaDB**، **Certbot**، Composer
+2. `composer install --no-dev` برای QR و تلگرام
+3. ایجاد دیتابیس، کاربر و جداول با index
+4. کپی پنل به `/opt/wg-panel`
+5. راه‌اندازی `wg0` با endpoint دامنه
+6. پیکربندی Apache روی دامنه پنل + **SSL (Let's Encrypt)**
+7. ست کردن `subscribe_base_url` روی `https://دامنه-پنل`
+8. sudoers (از جمله `persist-wg-peers.sh`) و cron هر ۵ دقیقه
 
 ## حذف (Uninstall)
 
@@ -132,12 +137,39 @@ SQL
 mysql wg_panel < database/schema.sql
 ```
 
+وابستگی PHP (اگر نصب دستی است):
+
+```bash
+sudo apt-get install -y php8.3-mbstring php8.3-curl php8.3-gd composer
+cd /opt/wg-panel
+sudo COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction
+```
+
+بدون `vendor/autoload.php` پنل بالا نمی‌آید.
+
 ## استفاده
 
-1. به آدرس `http://SERVER_IP/` بروید
+1. به `https://دامنه-پنل/` بروید
 2. با نام کاربری و رمز admin وارد شوید
-3. از «ایجاد اکانت» کاربر جدید بسازید
-4. فایل `.conf` را دانلود یا QR را اسکن کنید
+3. از «ایجاد اکانت» کاربر جدید بسازید (تاریخ انقضا شمسی)
+4. در داشبورد روی اکانت کلیک کنید: جزئیات، ویرایش، QR و دانلود در **مدال** است (`view.php` / `edit.php` همان را باز می‌کنند)
+5. فایل `.conf` را دانلود یا QR را اسکن کنید
+
+### داشبورد
+
+- جستجوی زنده: نام، IP یا ID
+- چیپ وضعیت (یکی): همه، فعال، غیرفعال، منقضی، حجم تمام، انقضای ۲۴ ساعت، در انتظار اتصال
+- بازه تاریخ شمسی: ایجاد از/تا و انقضا از/تا
+- فیلتر آنلاین/آفلاین نیست (handshake در کرنل است، نه DB)
+
+### تاریخ شمسی
+
+همهٔ تاریخ‌های UI شمسی است. ذخیره در MariaDB میلادی می‌ماند.
+
+- ایجاد و ویرایش: `1404/05/28 23:59`
+- فیلتر داشبورد: `1404/01/01`
+- ارقام فارسی با `changeNumberToEn` انگلیسی می‌شوند
+- API همان ISO میلادی را می‌گیرد و برمی‌گرداند
 
 ## فونت و استایل (محلی)
 
@@ -147,6 +179,11 @@ mysql wg_panel < database/schema.sql
 public/assets/
 ├── style.css
 ├── fonts.css
+├── dashboard.js
+├── jalali-datepicker.css
+├── jalali-datepicker.js
+├── account-modal.css
+├── account-modal.js
 ├── swagger/
 │   ├── swagger-ui.css
 │   └── swagger-ui-bundle.js
@@ -213,7 +250,17 @@ https://SERVER/subscribe.php?token=TOKEN
 - محدودیت سرعت
 - دانلود config و QR کانفیگ WireGuard
 
-لینک‌ها از پنل admin → صفحه QR/View
+لینک‌ها از پنل admin → مدال اکانت (تب اشتراک)
+
+## تنظیمات، بکاپ، تلگرام
+
+صفحه `/settings.php`:
+
+- WireGuard، پنل، ادمین، API (توکن + IPهای مجاز Bearer)
+- بکاپ دستی/خودکار دیتابیس و `wg0.conf`
+- تلگرام: ارسال تست و بکاپ (نیاز به `php8.3-curl`)
+
+تنظیمات قابل‌تغییر در جدول `panel_settings` است؛ `config.php` اتصال DB و مسیر اسکریپت‌ها را نگه می‌دارد.
 
 ## REST API + Swagger
 
@@ -237,6 +284,7 @@ Token در `config/config.php`:
 'api' => [
     'enabled' => true,
     'token' => '...',
+    'allowed_ips' => [],  // خالی = همه IPها؛ پر = فقط Bearer از این لیست
     'pagination' => [
         'default_per_page' => 20,  // وقتی per_page ارسال نشود
         'min_per_page' => 1,
@@ -244,6 +292,8 @@ Token در `config/config.php`:
     ],
 ],
 ```
+
+`allowed_ips` در تنظیمات پنل (تب API) با تگ IP ذخیره می‌شود. سشن ادمین لاگین‌شده چک IP نمی‌شود. توکن غلط همچنان `401` است؛ لیست پر + IP غیرمجاز = `403`.
 
 مثال pagination:
 
@@ -315,12 +365,15 @@ API:
 
 ## Cron
 
-هر 5 دقیقه (PHP + MariaDB):
+هر ۵ دقیقه (PHP + MariaDB):
 
 ```bash
 php /opt/wg-panel/scripts/sync-traffic.php
 php /opt/wg-panel/scripts/check-limits.php
+php /opt/wg-panel/scripts/sync-wg.php
 ```
+
+بکاپ ساعتی (اگر در تنظیمات فعال باشد): `scripts/backup.php`
 
 ## عیب‌یابی
 
@@ -339,19 +392,31 @@ tail -f /var/log/wg-panel-wgsync.log
 # تست دستی
 sudo php /opt/wg-panel/scripts/sync-traffic.php
 sudo php /opt/wg-panel/scripts/check-limits.php
+sudo php /opt/wg-panel/scripts/sync-wg.php
 ```
 
-### همگام‌سازی WireGuard (DB ↔ wg0.conf)
+### همگام‌سازی WireGuard (زنده ≠ فایل بوت)
 
-اگر اکانت در دیتابیس فعال است ولی در `wg0.conf` یا WireGuard زنده نیست:
+دو لایه جداست:
+
+| لایه | کی | کار |
+|------|----|-----|
+| تونل زنده | همان لحظهٔ ایجاد/حذف | `wg set` + tc — کلاینت فوری وصل/قطع می‌شود |
+| `wg0.conf` | cron هر ۵ دقیقه یا `sync-wg.php` دستی | فقط فایل بوت `wg-quick`؛ `[Interface]` حفظ می‌شود، `[Peer]` از DB بازنویسی می‌شود |
+
+اگر قبل از نوشتن conf سرور ری‌استارت شود، peer جدید تا کرون بعدی برنمی‌گردد.
 
 ```bash
 # فقط گزارش اختلاف
 sudo php /opt/wg-panel/scripts/sync-wg.php --dry-run
 
-# فقط WireGuard sync
+# سینک زنده + نوشتن wg0.conf + تأیید ذخیره
 sudo php /opt/wg-panel/scripts/sync-wg.php
 ```
+
+خروجی موفق باید شامل `wg0.conf: saved` باشد. اگر `NOT SAVED` آمد، sudoers را با `sudo bash /opt/wg-panel/scripts/fix-permissions.sh` درست کنید.
+
+خط اول `wg show dump` کلید اینترفیس است نه peer؛ سینک آن را orphan حساب نمی‌کند.
 
 روی سرور زنده بعد از دیپلوی: `sudo bash /opt/wg-panel/scripts/fix-permissions.sh` و این خط را در `/etc/cron.d/wg-panel` بگذارید اگر نیست:
 
