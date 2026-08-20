@@ -12,6 +12,8 @@ config/config.local.php
 
 # 🔑 کانفیگ دیپلوی لوکال (هاست و رمز FTP)
 .gitdeploy.config
+.gitdeploy.history
+.gitdeploy.session
 
 # 📦 وابستگی‌های Composer (روی سرور: composer install)
 /vendor/

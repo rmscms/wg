@@ -3,6 +3,8 @@
 .gitignore
 .gitattributes
 .gitdeploy.config
+.gitdeploy.history
+.gitdeploy.session
 .cursor
 .idea
 .vscode
