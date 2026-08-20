@@ -338,6 +338,23 @@ $backupIntervals = [
     48 => 'هر ۲ روز',
     168 => 'هفتگی',
 ];
+$lastAutoAt = (int) ($backup['last_run_at'] ?? 0);
+$intervalHours = max(1, (int) ($backup['interval_hours'] ?? 24));
+$backupAutoOverdue = !empty($backup['enabled'])
+    && ($lastAutoAt <= 0 || (time() - $lastAutoAt) >= ($intervalHours * 3600));
+$autoAgeSeconds = $lastAutoAt > 0 ? max(0, time() - $lastAutoAt) : 0;
+$autoAgeHours = intdiv($autoAgeSeconds, 3600);
+$autoAgeDays = intdiv($autoAgeHours, 24);
+if ($lastAutoAt <= 0) {
+    $autoAgeLabel = 'هنوز اجرا نشده';
+} elseif ($autoAgeDays > 0) {
+    $autoAgeLabel = $autoAgeDays . ' روز پیش';
+} elseif ($autoAgeHours > 0) {
+    $autoAgeLabel = $autoAgeHours . ' ساعت پیش';
+} else {
+    $autoAgeLabel = 'کمتر از یک ساعت پیش';
+}
+$backupLogPath = dirname(__DIR__) . '/storage/logs/backup.log';
 
 $logCount     = (int) $db->query('SELECT COUNT(*) FROM traffic_logs')->fetchColumn();
 $accountCount = (int) $db->query('SELECT COUNT(*) FROM accounts')->fetchColumn();
@@ -528,10 +545,22 @@ require __DIR__ . '/includes/header.php';
                 <span class="settings-hint">بعد از بک‌آپ موفق، اگر توکن و chat_id در تب تلگرام کامل باشد.</span>
             </div>
 
-            <?php if (!empty($backup['last_run_at'])): ?>
+            <?php if ($lastAutoAt > 0): ?>
             <div class="settings-row">
                 <label>آخرین بک‌آپ خودکار</label>
-                <input type="text" value="<?= e(WgPanel\Jalali::format(date('Y-m-d H:i:s', (int) $backup['last_run_at']), 'Y/m/d H:i:s')) ?>" readonly dir="ltr">
+                <input type="text" value="<?= e(WgPanel\Jalali::format(date('Y-m-d H:i:s', $lastAutoAt), 'Y/m/d H:i:s')) ?>" readonly dir="ltr">
+                <span class="settings-hint"><?= e($autoAgeLabel) ?> — فقط cron این تاریخ را عوض می‌کند، نه دکمه «بک‌آپ الآن».</span>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($backupAutoOverdue): ?>
+            <div class="alert alert-danger">
+                بک‌آپ خودکار از بازه عقب افتاده. روی سرور:
+                <code dir="ltr">sudo bash <?= e(dirname(__DIR__)) ?>/scripts/fix-permissions.sh</code>
+                سپس
+                <code dir="ltr">sudo -u www-data php <?= e(dirname(__DIR__)) ?>/scripts/backup.php</code>
+                و لاگ:
+                <code dir="ltr">tail -50 <?= e($backupLogPath) ?></code>
             </div>
             <?php endif; ?>
 

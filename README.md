@@ -373,7 +373,9 @@ php /opt/wg-panel/scripts/check-limits.php
 php /opt/wg-panel/scripts/sync-wg.php
 ```
 
-بکاپ ساعتی (اگر در تنظیمات فعال باشد): `scripts/backup.php`
+بکاپ ساعتی (اگر در تنظیمات فعال باشد): `scripts/backup.php` با کاربر `www-data`
+
+لاگ بکاپ: `/opt/wg-panel/storage/logs/backup.log`
 
 ## عیب‌یابی
 
@@ -388,11 +390,13 @@ sudo wg show wg0
 tail -f /var/log/wg-panel-sync.log
 tail -f /var/log/wg-panel-limits.log
 tail -f /var/log/wg-panel-wgsync.log
+tail -f /opt/wg-panel/storage/logs/backup.log
 
 # تست دستی
 sudo php /opt/wg-panel/scripts/sync-traffic.php
 sudo php /opt/wg-panel/scripts/check-limits.php
 sudo php /opt/wg-panel/scripts/sync-wg.php
+sudo -u www-data php /opt/wg-panel/scripts/backup.php
 ```
 
 ### همگام‌سازی WireGuard (زنده ≠ فایل بوت)

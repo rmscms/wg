@@ -176,7 +176,7 @@ php /opt/wg-panel/scripts/sync-wg.php
 | 🔄 | `sync-wg.php` | همگام DB ↔ runtime؛ نوشتن `[Peer]` در `wg0.conf` از دیتابیس |
 | 📝 | `persist-wg-peers.sh` | بازنویسی اتمی `[Peer]` با حفظ `[Interface]` |
 | 🚦 | `restore-tc.php` | بازگردانی قوانین سرعت |
-| 💾 | `backup.php` | بکاپ زمان‌بندی‌شده + ارسال اختیاری به تلگرام |
+| 💾 | `backup.php` | بکاپ زمان‌بندی‌شده (cron ساعتی با `www-data`) + تلگرام اختیاری؛ لاگ: `storage/logs/backup.log` |
 | ➕ | `apply-peer.sh` | افزودن peer زنده (`wg set` + tc) |
 | ➖ | `remove-peer.sh` | حذف peer زنده (`wg set` + tc) |
 | 🧪 | `debug-traffic.php` | عیب‌یابی ترافیک |

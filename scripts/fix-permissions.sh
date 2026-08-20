@@ -25,9 +25,16 @@ chmod +x "${ROOT}/scripts/"*.sh "${ROOT}/scripts/"*.php 2>/dev/null || true
 sed -i 's/\r$//' "${ROOT}/scripts/"*.sh 2>/dev/null || true
 
 echo "==> Storage directories"
-mkdir -p "${ROOT}/storage/sessions" "${ROOT}/storage/login-throttle" "${ROOT}/storage/backups"
+mkdir -p "${ROOT}/storage/sessions" "${ROOT}/storage/login-throttle" "${ROOT}/storage/backups" "${ROOT}/storage/logs"
 chown -R www-data:www-data "${ROOT}/storage"
-chmod 750 "${ROOT}/storage" "${ROOT}/storage/sessions" "${ROOT}/storage/login-throttle" "${ROOT}/storage/backups"
+chmod 750 "${ROOT}/storage" "${ROOT}/storage/sessions" "${ROOT}/storage/login-throttle" "${ROOT}/storage/backups" "${ROOT}/storage/logs"
+touch "${ROOT}/storage/logs/backup.log"
+chown www-data:www-data "${ROOT}/storage/logs/backup.log"
+chmod 640 "${ROOT}/storage/logs/backup.log"
+if [[ -f /var/log/wg-panel-backup.log ]]; then
+    chown www-data:www-data /var/log/wg-panel-backup.log
+    chmod 640 /var/log/wg-panel-backup.log
+fi
 
 if [[ -f "$CONFIG" ]]; then
     echo "==> config.php stays mode 640 (settings live in the database)"
@@ -64,6 +71,12 @@ chmod 440 /etc/sudoers.d/wg-panel
 
 if command -v visudo >/dev/null 2>&1; then
     visudo -cf /etc/sudoers.d/wg-panel
+fi
+
+echo "==> cron backup log path"
+if [[ -f /etc/cron.d/wg-panel ]]; then
+    sed -i "s|www-data php ${ROOT}/scripts/backup.php >> /var/log/wg-panel-backup.log 2>&1|www-data /usr/bin/php ${ROOT}/scripts/backup.php >> ${ROOT}/storage/logs/backup.log 2>&1|" /etc/cron.d/wg-panel
+    sed -i "s|www-data /usr/bin/php ${ROOT}/scripts/backup.php >> /var/log/wg-panel-backup.log 2>&1|www-data /usr/bin/php ${ROOT}/scripts/backup.php >> ${ROOT}/storage/logs/backup.log 2>&1|" /etc/cron.d/wg-panel
 fi
 
 echo "==> ip_forward"

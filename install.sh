@@ -199,11 +199,13 @@ chown -R www-data:www-data "$PANEL_DIR/vendor"
 mkdir -p "$PANEL_DIR/storage/sessions"
 mkdir -p "$PANEL_DIR/storage/login-throttle"
 mkdir -p "$PANEL_DIR/storage/backups"
+mkdir -p "$PANEL_DIR/storage/logs"
 chown -R www-data:www-data "$PANEL_DIR/storage"
 chmod 750 "$PANEL_DIR/storage"
 chmod 750 "$PANEL_DIR/storage/sessions"
 chmod 750 "$PANEL_DIR/storage/login-throttle"
 chmod 750 "$PANEL_DIR/storage/backups"
+chmod 750 "$PANEL_DIR/storage/logs"
 
 echo "==> Setting up MariaDB..."
 systemctl enable mariadb >/dev/null 2>&1 || systemctl enable mysql >/dev/null 2>&1 || true
@@ -408,11 +410,14 @@ cat > /etc/cron.d/wg-panel <<CRON
 */5 * * * * root php ${PANEL_DIR}/scripts/check-limits.php >> /var/log/wg-panel-limits.log 2>&1
 */5 * * * * root php ${PANEL_DIR}/scripts/sync-traffic.php >> /var/log/wg-panel-sync.log 2>&1
 */5 * * * * root php ${PANEL_DIR}/scripts/sync-wg.php >> /var/log/wg-panel-wgsync.log 2>&1
-0 * * * * www-data php ${PANEL_DIR}/scripts/backup.php >> /var/log/wg-panel-backup.log 2>&1
+0 * * * * www-data /usr/bin/php ${PANEL_DIR}/scripts/backup.php >> ${PANEL_DIR}/storage/logs/backup.log 2>&1
 15 3 * * * root find ${PANEL_DIR}/storage/sessions -name 'sess_*' -mmin +4320 -delete
 CRON
 
-touch /var/log/wg-panel-sync.log /var/log/wg-panel-limits.log /var/log/wg-panel-backup.log /var/log/wg-panel-wgsync.log
+touch /var/log/wg-panel-sync.log /var/log/wg-panel-limits.log /var/log/wg-panel-wgsync.log
+touch "${PANEL_DIR}/storage/logs/backup.log"
+chown www-data:www-data "${PANEL_DIR}/storage/logs/backup.log"
+chmod 640 "${PANEL_DIR}/storage/logs/backup.log"
 
 echo
 echo "============================================"
